@@ -50,7 +50,7 @@ def is_valid_location(board, pos, type):
         for tuple in pos:
             if tuple[0] < 'A' or tuple[0] > 'H' or int(tuple[1]) > 12 or int(tuple[1]) < 1:
                 return False
-            if board[int(tuple[1])][ord(tuple[0]) - ord('A')] != 0:
+            if board[int(tuple[1])-1][ord(tuple[0]) - ord('A')] != 0:
                 return False
             if int(tuple[1]) - 1 >= 1 and board[int(tuple[1]) - 2][ord(tuple[0]) - ord('A')] == 0:
                 return False
@@ -64,7 +64,7 @@ def is_valid_location(board, pos, type):
     return True
 
 
-def is_recycle_legal(origin_pos_str, step_record, new_pos_str, new_type, step_counter):
+def is_recycle_legal(origin_pos, new_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
     if piece_not_in_board(origin_pos_str, step_record):
         print("The piece is not in the board.")
         print("Please select a valid piece in the board to recycle.")
@@ -76,6 +76,23 @@ def is_recycle_legal(origin_pos_str, step_record, new_pos_str, new_type, step_co
         print("You cannot recycle the piece which another player just put.")
         print("Please select a valid piece in the board to recycle.")
         return False
+
+    # check if there is any piece on it.
+    if int(origin_type) % 2 == 1:
+        # 1,3,5,7
+        coordinate = [get_upper_coordinate(origin_pos[0]), get_upper_coordinate(origin_pos[1])]
+        if dot_board[coordinate[0][0]][coordinate[0][1]] != 0 or dot_board[coordinate[1][0]][coordinate[1][1]]!=0:
+            print("you cannot recycle a card that has something on top of it.")
+            return False
+
+
+    elif int(origin_type) % 2 == 0:
+        # 2,4,6,8
+        coordinate = [get_upper_coordinate(origin_pos[0]), get_upper_coordinate(origin_pos[1])]
+        if dot_board[coordinate[1][0]][coordinate[1][1]] != 0:
+            print("you cannot recycle a card that has something on top of it.")
+            return False
+
 
     if origin_pos_str == new_pos_str and origin_type == new_type:
         print("You cannot take one piece and put it back with no changes.")
@@ -96,13 +113,17 @@ def print_board(board):
 
 
 def out_of_pieces():
-    if step_counter <= 8:
+    if step_counter <= 1:
         return False
     return True
 
 
 def coordinate_translation(coordinate):
     return (int(coordinate[1]) - 1, ord(coordinate[0]) - ord('A'))
+
+
+def get_upper_coordinate(coordinate):
+    return (int(coordinate[1]), ord(coordinate[0]) - ord('A'))
 
 
 def winning_move(board, piece):
@@ -165,6 +186,9 @@ while not game_over:
     string = string.split(" ")
 
     if len(string) == 4:
+        if recycle is True:
+            print("You have no card, please recycle a card from the board.")
+            continue
         pos = (string[2], string[3])
         type = string[1]
 
@@ -187,7 +211,7 @@ while not game_over:
         new_pos = get_piece_position(new_pos_1st, new_type)
         new_pos_str = to_string(new_pos)
 
-        if not is_recycle_legal(origin_pos_str, step_record, new_pos_str, new_type, step_counter):
+        if not is_recycle_legal(origin_pos, new_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
             continue
 
         fake_dot_board = dot_board
@@ -199,7 +223,7 @@ while not game_over:
             step_record.pop(origin_pos_str)
             drop_piece(dot_board, color_board, new_pos, new_type, step_record, step_counter)
         else:
-            print("Please select a valid piece in the board to recycle.")
+            print("Please select a valid place on the board to recycle.")
             continue
 
     dot_win = winning_move(dot_board, piece_pos)
