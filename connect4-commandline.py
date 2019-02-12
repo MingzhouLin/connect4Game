@@ -171,7 +171,9 @@ player1 = input("Player 1 choose side: 1.dot; 2.color")
 player2 = input("Player 2 choose side: 1.dot; 2.color")
 
 while not game_over:
-
+    if step_counter > 60:
+        print("No player has won, game ends.")
+        break
     # Ask for Player 1 Input
     if not recycle:
         if turn == 0:
