@@ -57,9 +57,9 @@ def is_valid_location(board, pos, type):
     elif type == "2" or type == "4" or type == "6" or type == "8":
         if pos[0][0] < 'A' or pos[0][0] > 'H' or int(pos[0][1]) > 12 or int(pos[0][1]) < 1:
             return False
-        if board[int(pos[0][1])][ord(pos[0][0]) - ord('A')] != 0:
+        if board[int(pos[0][1])-1][ord(pos[0][0]) - ord('A')] != 0:
             return False
-        if int(pos[0][1]) - 1 >= 1 and board[int(pos[0][1]) - 1][ord(pos[0][0]) - ord('A')] == 0:
+        if int(pos[0][1]) - 1 >= 1 and board[int(pos[0][1]) - 2][ord(pos[0][0]) - ord('A')] == 0:
             return False
     return True
 
@@ -96,7 +96,7 @@ def print_board(board):
 
 
 def out_of_pieces():
-    if step_counter <= 24:
+    if step_counter <= 8:
         return False
     return True
 
@@ -197,7 +197,7 @@ while not game_over:
         if is_valid_location(fake_dot_board, new_pos, type):
             remove_piece(dot_board, color_board, origin_pos)
             step_record.pop(origin_pos_str)
-            drop_piece(dot_board, color_board, new_pos, new_type)
+            drop_piece(dot_board, color_board, new_pos, new_type, step_record, step_counter)
         else:
             print("Please select a valid piece in the board to recycle.")
             continue
