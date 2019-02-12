@@ -1,10 +1,6 @@
 import numpy as np
-import pygame
-import sys
 
 # numpy , pygame
-step_counter = 1
-step_record = dict()
 ROW_COUNT = 12
 COLUMN_COUNT = 8
 PIECES = {"1": {"dot": (1, 2), "color": (1, 2)}, "2": {"dot": (2, 1), "color": (2, 1)},
@@ -22,34 +18,24 @@ def create_board():
 
 
 def to_string(piece_pos):
-    return piece_pos[0][0]+piece_pos[0][1]+piece_pos[1][0]+piece_pos[1][1]
+    return piece_pos[0][0] + piece_pos[0][1] + piece_pos[1][0] + piece_pos[1][1]
 
 
-def drop_piece(dot_board, color_board, piece_pos, type):
-    coordinate= [coordinate_translation(piece_pos[0]), coordinate_translation(piece_pos[1])]
+def drop_piece(dot_board, color_board, piece_pos, type, step_record, step_counter):
+    coordinate = [coordinate_translation(piece_pos[0]), coordinate_translation(piece_pos[1])]
     dot_board[coordinate[0][0]][coordinate[0][1]] = PIECES[type][DOT][0]
     dot_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][DOT][1]
     color_board[coordinate[0][0]][coordinate[0][1]] = PIECES[type][COLOR][0]
     color_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][COLOR][1]
     step_record[to_string(piece_pos)] = str(step_counter) + "," + str(type)
 
-def recover_piece(dot_board, color_board, piece_pos, type):
-    coordinate= [coordinate_translation(piece_pos[0]), coordinate_translation(piece_pos[1])]
-    dot_board[coordinate[0][0]][coordinate[0][1]] = PIECES[type][DOT][0]
-    dot_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][DOT][1]
-    color_board[coordinate[0][0]][coordinate[0][1]] = PIECES[type][COLOR][0]
-    color_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][COLOR][1]
-
-
 
 def remove_piece(dot_board, color_board, piece_pos):
-    coordinate= [coordinate_translation(piece_pos[0]), coordinate_translation(piece_pos[1])]
+    coordinate = [coordinate_translation(piece_pos[0]), coordinate_translation(piece_pos[1])]
     dot_board[coordinate[0][0]][coordinate[0][1]] = 0
     dot_board[coordinate[1][0]][coordinate[1][1]] = 0
     color_board[coordinate[0][0]][coordinate[0][1]] = 0
     color_board[coordinate[1][0]][coordinate[1][1]] = 0
-
-
 
 
 def get_piece_position(pos, type):
@@ -64,9 +50,9 @@ def is_valid_location(board, pos, type):
         for tuple in pos:
             if tuple[0] < 'A' or tuple[0] > 'H' or int(tuple[1]) > 12 or int(tuple[1]) < 1:
                 return False
-            if board[int(tuple[1])][ord(tuple[0])-ord('A')] != 0:
+            if board[int(tuple[1])][ord(tuple[0]) - ord('A')] != 0:
                 return False
-            if int(tuple[1]) - 1 >= 1 and board[int(tuple[1]) - 2][ord(tuple[0])-ord('A')] == 0:
+            if int(tuple[1]) - 1 >= 1 and board[int(tuple[1]) - 2][ord(tuple[0]) - ord('A')] == 0:
                 return False
     elif type == "2" or type == "4" or type == "6" or type == "8":
         if pos[0][0] < 'A' or pos[0][0] > 'H' or int(pos[0][1]) > 12 or int(pos[0][1]) < 1:
@@ -78,12 +64,24 @@ def is_valid_location(board, pos, type):
     return True
 
 
-def is_valid_piece(origin_pos, pos, steps):
-    pass
+def is_recycle_legal(origin_pos_str, step_record, new_pos_str, new_type, step_counter):
+    if piece_not_in_board(origin_pos_str, step_record):
+        print("The piece is not in the board.")
+        print("Please select a valid piece in the board to recycle.")
+        return False
 
+    origin_type = step_record.get(origin_pos_str).split(",")[1]
+    origin_step_num = step_record.get(origin_pos_str).split(",")[0]
+    if origin_step_num == step_counter - 1:
+        print("You cannot recycle the piece which another player just put.")
+        print("Please select a valid piece in the board to recycle.")
+        return False
 
-def substitution(board, origin_pos, pos, type, steps):
-    pass
+    if origin_pos_str == new_pos_str and origin_type == new_type:
+        print("You cannot take one piece and put it back with no changes.")
+        print("Please select a valid piece in the board to recycle.")
+        return False
+    return True
 
 
 def piece_not_in_board(pos_str, step_record):
@@ -91,6 +89,7 @@ def piece_not_in_board(pos_str, step_record):
         return False
     else:
         return True
+
 
 def print_board(board):
     print(np.flip(board, 0))
@@ -103,15 +102,16 @@ def out_of_pieces():
 
 
 def coordinate_translation(coordinate):
-    return (int(coordinate[1])-1, ord(coordinate[0])-ord('A'))
+    return (int(coordinate[1]) - 1, ord(coordinate[0]) - ord('A'))
 
 
 def winning_move(board, piece):
     # Check vertical
     for c in range(COLUMN_COUNT):
-        for r in range(ROW_COUNT-3):
-            if board[r][c] == board[r+1][c] and board[r+1][c] == board[r + 2][c] and board[r + 2][c] == board[r + 3][
-                c] and board[r][c] != 0:
+        for r in range(ROW_COUNT - 3):
+            if board[r][c] == board[r + 1][c] and board[r + 1][c] == board[r + 2][c] and board[r + 2][c] == \
+                    board[r + 3][
+                        c] and board[r][c] != 0:
                 return True
 
     # Check horizantal
@@ -144,6 +144,8 @@ print(color_board)
 game_over = False
 turn = 0
 recycle = False
+step_counter = 1
+step_record = dict()
 player1 = input("Player 1 choose side: 1.dot; 2.color")
 player2 = input("Player 2 choose side: 1.dot; 2.color")
 
@@ -169,7 +171,7 @@ while not game_over:
         piece_pos = get_piece_position(pos, type)
 
         if is_valid_location(dot_board, piece_pos, type):
-            drop_piece(dot_board, color_board, piece_pos, type)
+            drop_piece(dot_board, color_board, piece_pos, type, step_record, step_counter)
         else:
             print("The operation is illegal")
             continue
@@ -182,34 +184,21 @@ while not game_over:
         origin_pos_str = to_string(origin_pos)
         new_type = string[4]
         new_pos_1st = (string[5], string[6])
-        new_pos = get_piece_position(new_pos_1st,new_type)
+        new_pos = get_piece_position(new_pos_1st, new_type)
         new_pos_str = to_string(new_pos)
 
-
-        if piece_not_in_board(origin_pos_str, step_record):
-            print("Thue piece is not in the board.")
-            print("Please select a valid piece in the board to recycle.")
-            continue
-        origin_type = step_record.get(origin_pos_str).split(",")[1]
-        origin_step_num = step_record.get(origin_pos_str).split(",")[0]
-
-        if origin_step_num == step_counter - 1:
-            print("You cannot recycle the piece which another player just put.")
-            print("Please select a valid piece in the board to recycle.")
+        if not is_recycle_legal(origin_pos_str, step_record, new_pos_str, new_type, step_counter):
             continue
 
-        if origin_pos_str == new_pos_str and origin_type == new_type:
-            print("You cannot take one piece and put it back with no changes.")
-            print("Please select a valid piece in the board to recycle.")
-            continue
+        fake_dot_board = dot_board
+        fake_color_board = color_board
+        remove_piece(fake_dot_board, fake_color_board, origin_pos)
 
-        remove_piece(dot_board, color_board, origin_pos)
-
-        if is_valid_location(dot_board, new_pos, type):
+        if is_valid_location(fake_dot_board, new_pos, type):
+            remove_piece(dot_board, color_board, origin_pos)
             step_record.pop(origin_pos_str)
             drop_piece(dot_board, color_board, new_pos, new_type)
         else:
-            recover_piece(dot_board, color_board, origin_pos, origin_type)
             print("Please select a valid piece in the board to recycle.")
             continue
 
@@ -240,6 +229,6 @@ while not game_over:
     if out_of_pieces():
         recycle = True
 
-    step_counter = step_counter + 1
+    step_counter += 1
     turn += 1
     turn = turn % 2
