@@ -26,7 +26,7 @@ def drop_piece(dot_board, color_board, piece_pos, type, steps):
     dot_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][DOT][1]
     color_board[coordinate[0][0]][coordinate[0][1]] = PIECES[type][COLOR][0]
     color_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][COLOR][1]
-    steps.append(piece_pos)
+    steps[piece_pos]=
 
 
 def get_piece_position(pos, type):
@@ -117,7 +117,7 @@ print(color_board)
 game_over = False
 turn = 0
 recycle = False
-steps = []
+steps = {}
 player1 = input("Player 1 choose side: 1.dot; 2.color")
 player2 = input("Player 2 choose side: 1.dot; 2.color")
 
@@ -144,6 +144,9 @@ while not game_over:
 
         if is_valid_location(dot_board, piece_pos, type):
             drop_piece(dot_board, color_board, piece_pos, type, steps)
+        else:
+            print("The operation is illegal")
+            continue
     else:
         origin_pos = [(string[0], string[1]), (string[2], string[3])]
         type = string[4]
