@@ -1,4 +1,5 @@
 import numpy as np
+from sys import stdin
 
 # numpy , pygame
 ROW_COUNT = 12
@@ -113,7 +114,7 @@ def print_board(board):
 
 
 def out_of_pieces():
-    if step_counter <= 1:
+    if step_counter <= 24:
         return False
     return True
 
@@ -170,21 +171,60 @@ step_record = dict()
 player1 = input("Player 1 choose side: 1.dot; 2.color")
 player2 = input("Player 2 choose side: 1.dot; 2.color")
 
+player1_role = ""
+player2_role = ""
+if player1 == "1":
+    player1_role = "dot"
+else:
+    player1_role = "color"
+if player2 == "1":
+    player2_role = "dot"
+else:
+    player2_role = "color"
+
+
+
+
+input_type = input("Please choose the input type. (1. step-by-step 2. multiple steps)")
+num_of_steps = 0
+input_list = list()
+if input_type == "2":
+    print("Please input the multiple steps")
+    while True:
+        line = stdin.readline().strip()
+        if  len(line) < 3:
+            break
+        input_list.append(line)
+
+
+
+
 while not game_over:
     if step_counter > 60:
         print("No player has won, game ends.")
         break
     # Ask for Player 1 Input
-    if not recycle:
+    if input_type == "2" and num_of_steps >= len(input_list):
+        print("The multiple steps have been handled.")
+        print("Please input a step by hand.")
+        input_type = "1"
+
+    if not recycle and input_type == "1":
         if turn == 0:
             string = input("Player 1 turn: ")
         else:
             string = input("Player 2 turn: ")
-    else:
+    elif input_type == "1":
         if turn == 0:
             string = input("Player 1 turn(recycle): ")
         else:
             string = input("Player 2 turn(recycle): ")
+    elif input_type == "2" and num_of_steps < len(input_list):
+        string = input_list[num_of_steps]
+        num_of_steps = num_of_steps + 1
+
+
+
     string = string.split(" ")
 
     if len(string) == 4:
@@ -200,6 +240,13 @@ while not game_over:
             drop_piece(dot_board, color_board, piece_pos, type, step_record, step_counter)
         else:
             print("The operation is illegal")
+            print(string)
+            if input_type == "2":
+                new_step = input("Please input a valid move.")
+                num_of_steps = num_of_steps - 1
+                input_list[num_of_steps] = new_step
+
+
             continue
     else:
         if recycle is False:
@@ -232,24 +279,25 @@ while not game_over:
     color_win = winning_move(color_board, piece_pos)
     if dot_win and color_win:
         if turn == 0:
-            print("Player 1 Wins!")
+            print("Player 1 Wins with " + player1_role)
         else:
-            print("Player 2 Wins!")
+            print("Player 2 Wins with " + player2_role)
         game_over = True
     elif dot_win:
         if player1 == "1":
-            print("Player 1 Wins!")
+            print("Player 1 Wins with " + player1_role)
         else:
-            print("Player 2 Wins!")
+            print("Player 2 Wins with " + player2_role)
         game_over = True
     elif color_win:
         if player1 == "2":
-            print("Player 1 Wins!")
+            print("Player 1 Wins with " + player1_role)
         else:
-            print("Player 2 Wins!")
+            print("Player 2 Wins with " + player2_role)
         game_over = True
-
+    print("Dot board    " + str(step_counter) + " round.   dot->1:black,2:white")
     print_board(dot_board)
+    print("Color board    " + str(step_counter) + " round.   color->1:red, 2:white")
     print_board(color_board)
 
     if out_of_pieces():
