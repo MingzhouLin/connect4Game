@@ -253,6 +253,7 @@ while not game_over:
             print("Please select a valid place on the board to recycle.")
             continue
     game_over = is_game_over(dot_board, piece_pos, player1, player2)
+    print(string)
     print("Dot board    " + str(step_counter) + " round.   dot->1:black,2:white")
     print_board(dot_board)
     print("Color board    " + str(step_counter) + " round.   color->1:red, 2:white")
