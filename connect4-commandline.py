@@ -112,12 +112,6 @@ def print_board(board):
     print(np.flip(board, 0))
 
 
-def out_of_pieces():
-    if step_counter <= 24:
-        return False
-    return True
-
-
 def coordinate_translation(coordinate):
     return (int(coordinate[1]) - 1, ord(coordinate[0]) - ord('A'))
 
@@ -264,7 +258,7 @@ while not game_over:
     print("Color board    " + str(step_counter) + " round.   color->1:red, 2:white")
     print_board(color_board)
 
-    if out_of_pieces():
+    if step_counter > 24:
         recycle = True
 
     step_counter += 1
