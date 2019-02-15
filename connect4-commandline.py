@@ -171,30 +171,23 @@ step_record = dict()
 player1 = input("Player 1 choose side: 1.dot; 2.color")
 player2 = input("Player 2 choose side: 1.dot; 2.color")
 
-player1_role = ""
-player2_role = ""
-if player1 == "1":
-    player1_role = "dot"
-else:
-    player1_role = "color"
-if player2 == "1":
-    player2_role = "dot"
-else:
-    player2_role = "color"
 
+
+def read_multiple_lines():
+    input_list = list()
+    while True:
+        line = stdin.readline().strip()
+        if  len(line) < 3:
+            return input_list
+        input_list.append(line)
 
 
 
 input_type = input("Please choose the input type. (1. step-by-step 2. multiple steps)")
-num_of_steps = 0
 input_list = list()
 if input_type == "2":
     print("Please input the multiple steps")
-    while True:
-        line = stdin.readline().strip()
-        if  len(line) < 3:
-            break
-        input_list.append(line)
+    input_list = read_multiple_lines()
 
 
 
@@ -204,7 +197,7 @@ while not game_over:
         print("No player has won, game ends.")
         break
     # Ask for Player 1 Input
-    if input_type == "2" and num_of_steps >= len(input_list):
+    if input_type == "2" and step_counter > len(input_list):
         print("The multiple steps have been handled.")
         print("Please input a step by hand.")
         input_type = "1"
@@ -219,9 +212,9 @@ while not game_over:
             string = input("Player 1 turn(recycle): ")
         else:
             string = input("Player 2 turn(recycle): ")
-    elif input_type == "2" and num_of_steps < len(input_list):
-        string = input_list[num_of_steps]
-        num_of_steps = num_of_steps + 1
+    elif input_type == "2" and step_counter <= len(input_list):
+        string = input_list[step_counter - 1]
+
 
 
 
@@ -243,8 +236,8 @@ while not game_over:
             print(string)
             if input_type == "2":
                 new_step = input("Please input a valid move.")
-                num_of_steps = num_of_steps - 1
-                input_list[num_of_steps] = new_step
+
+                input_list[step_counter - 1] = new_step
 
 
             continue
@@ -279,21 +272,27 @@ while not game_over:
     color_win = winning_move(color_board, piece_pos)
     if dot_win and color_win:
         if turn == 0:
-            print("Player 1 Wins with " + player1_role)
+            if player1 == "1":
+                print("Player 1 Wins with dot!")
+            else:
+                print("Player 1 Wins with color!")
         else:
-            print("Player 2 Wins with " + player2_role)
+            if player2 == "1":
+                print("Player 2 Wins with dot!")
+            else:
+                print("Player 2 Wins with color!")
         game_over = True
     elif dot_win:
         if player1 == "1":
-            print("Player 1 Wins with " + player1_role)
+            print("Player 1 Wins with dot!")
         else:
-            print("Player 2 Wins with " + player2_role)
+            print("Player 2 Wins with dot!")
         game_over = True
     elif color_win:
         if player1 == "2":
-            print("Player 1 Wins with " + player1_role)
+            print("Player 1 Wins with color!")
         else:
-            print("Player 2 Wins with " + player2_role)
+            print("Player 2 Wins with color!")
         game_over = True
     print("Dot board    " + str(step_counter) + " round.   dot->1:black,2:white")
     print_board(dot_board)
