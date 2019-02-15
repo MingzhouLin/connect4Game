@@ -171,8 +171,6 @@ step_record = dict()
 player1 = input("Player 1 choose side: 1.dot; 2.color")
 player2 = input("Player 2 choose side: 1.dot; 2.color")
 
-
-
 def read_multiple_lines():
     input_list = list()
     while True:
@@ -236,10 +234,7 @@ while not game_over:
             print(string)
             if input_type == "2":
                 new_step = input("Please input a valid move.")
-
                 input_list[step_counter - 1] = new_step
-
-
             continue
     else:
         if recycle is False:
@@ -254,6 +249,9 @@ while not game_over:
         new_pos_str = to_string(new_pos)
 
         if not is_recycle_legal(origin_pos, new_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
+            if input_type == "2":
+                new_step = input("Please input a valid recycle.")
+                input_list[step_counter - 1] = new_step
             continue
 
         fake_dot_board = dot_board
@@ -266,6 +264,9 @@ while not game_over:
             drop_piece(dot_board, color_board, new_pos, new_type, step_record, step_counter)
         else:
             print("Please select a valid place on the board to recycle.")
+            if input_type == "2":
+                new_step = input("Please input a valid recycle.")
+                input_list[step_counter - 1] = new_step
             continue
 
     dot_win = winning_move(dot_board, piece_pos)
