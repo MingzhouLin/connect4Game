@@ -73,7 +73,7 @@ def is_recycle_legal(origin_pos, new_pos, origin_pos_str, step_record, new_pos_s
 
     origin_type = step_record.get(origin_pos_str).split(",")[1]
     origin_step_num = step_record.get(origin_pos_str).split(",")[0]
-    if origin_step_num == step_counter - 1:
+    if origin_step_num == str(step_counter - 1):
         print("You cannot recycle the piece which another player just put.")
         print("Please select a valid piece in the board to recycle.")
         return False
