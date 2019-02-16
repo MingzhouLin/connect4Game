@@ -40,14 +40,14 @@ def remove_piece(dot_board, color_board, piece_pos):
 
 
 def get_piece_position(pos, type):
-    if type == "1" or type == "3" or type == "5" or type == "7":
+    if int(type) % 2 == 1:
         return [pos, (chr(ord(pos[0]) + 1), pos[1])]
-    elif type == "2" or type == "4" or type == "6" or type == "8":
+    elif int(type) % 2 == 0:
         return [pos, (pos[0], str(int(pos[1]) + 1))]
 
 
 def is_valid_location(board, pos, type):
-    if type == "1" or type == "3" or type == "5" or type == "7":
+    if int(type) % 2 == 1:
         for tuple in pos:
             if tuple[0] < 'A' or tuple[0] > 'H' or int(tuple[1]) > 12 or int(tuple[1]) < 1:
                 return False
@@ -55,8 +55,8 @@ def is_valid_location(board, pos, type):
                 return False
             if int(tuple[1]) - 1 >= 1 and board[int(tuple[1]) - 2][ord(tuple[0]) - ord('A')] == 0:
                 return False
-    elif type == "2" or type == "4" or type == "6" or type == "8":
-        if pos[0][0] < 'A' or pos[0][0] > 'H' or int(pos[0][1]) > 12 or int(pos[0][1]) < 1:
+    elif int(type) % 2 == 0:
+        if pos[0][0] < 'A' or pos[0][0] > 'H' or pos[1][0] > 'H' or int(pos[0][1]) > 12 or int(pos[0][1]) < 1:
             return False
         if board[int(pos[0][1]) - 1][ord(pos[0][0]) - ord('A')] != 0:
             return False
@@ -65,7 +65,7 @@ def is_valid_location(board, pos, type):
     return True
 
 
-def is_recycle_legal(origin_pos, new_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
+def is_recycle_legal(origin_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
     if piece_not_in_board(origin_pos_str, step_record):
         print("The piece is not in the board.")
         print("Please select a valid piece in the board to recycle.")
@@ -238,7 +238,7 @@ while not game_over:
         new_pos = get_piece_position(new_pos_1st, new_type)
         new_pos_str = to_string(new_pos)
 
-        if not is_recycle_legal(origin_pos, new_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
+        if not is_recycle_legal(origin_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
             continue
 
         fake_dot_board = dot_board
