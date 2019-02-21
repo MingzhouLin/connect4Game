@@ -152,7 +152,7 @@ def winning_move(board, piece):
     return False
 
 
-def is_game_over(dot_board, piece_pos, player1, player2):
+def is_game_over(dot_board, color_board, piece_pos, player1, player2):
     dot_win = winning_move(dot_board, piece_pos)
     color_win = winning_move(color_board, piece_pos)
     if dot_win and color_win:
@@ -252,7 +252,7 @@ while not game_over:
         else:
             print("Please select a valid place on the board to recycle.")
             continue
-    game_over = is_game_over(dot_board, piece_pos, player1, player2)
+    game_over = is_game_over(dot_board, color_board, piece_pos, player1, player2)
     print(string)
     print("Dot board    " + str(step_counter) + " round.   dot->1:black,2:white")
     print_board(dot_board)
