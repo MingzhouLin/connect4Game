@@ -1,4 +1,6 @@
 import numpy as np
+import Tree.Tree as Tree
+import Tree.Node as Node
 from sys import stdin
 
 # numpy , pygame
@@ -12,6 +14,8 @@ PIECES = {"1": {"dot": (1, 2), "color": (1, 2)}, "2": {"dot": (2, 1), "color": (
 GRADE_LEVEL = [10, 100, 1000, -10, -100, -1000]
 DOT = "dot"
 COLOR = "color"
+MIN = "min"
+MAX = "max"
 
 
 def create_board():
@@ -29,7 +33,8 @@ def drop_piece(dot_board, color_board, piece_pos, type, step_record, step_counte
     dot_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][DOT][1]
     color_board[coordinate[0][0]][coordinate[0][1]] = PIECES[type][COLOR][0]
     color_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][COLOR][1]
-    step_record[to_string(piece_pos)] = str(step_counter) + "," + str(type)
+    if step_counter is not None:
+        step_record[to_string(piece_pos)] = str(step_counter) + "," + str(type)
 
 
 def remove_piece(dot_board, color_board, piece_pos):
@@ -243,7 +248,7 @@ def winning_move(board):
     return False
 
 
-def is_game_over(dot_board, piece_pos, player1, player2):
+def is_game_over(dot_board, color_board, piece_pos, player1, player2):
     dot_win = winning_move(dot_board, piece_pos)
     color_win = winning_move(color_board, piece_pos)
     if dot_win and color_win:
@@ -272,6 +277,41 @@ def is_game_over(dot_board, piece_pos, player1, player2):
         return True
 
 
+def compute_best_step(dot_board, color_board):
+    tree = build_tree(dot_board, color_board)
+
+
+def build_tree(dot_board, color_board):
+    root_grade = heuristic_matrix_estimation(dot_board, color_board)
+    root = Node(dot_board, color_board, None, MAX, None, root_grade)
+    tree = Tree(root)
+    tree.level[1] = root
+    tree = extend_tree(tree, 1, MIN)
+    tree = extend_tree(tree, 2, MAX)
+    return tree
+
+
+def extend_tree(tree, level, role):
+    tree.level[level + 1] = []
+    for parent_node in tree.level[level]:
+        for r in range(ROW_COUNT):
+            for c in range(COLUMN_COUNT):
+                if (parent_node.dot_board[r][c] == 0 and r == 0) or (
+                        parent_node.dot_board[r - 1][c] != 0 and parent_node.dot_board[r][c] == 0):
+                    for i in range(1, 8):
+                        type = str(i)
+                        next_step = get_piece_position((r, c), type)
+                        if is_valid_location(dot_board, next_step, type):
+                            tmp_dot_board = parent_node.dot_board
+                            tmp_color_board = parent_node.color_board
+                            drop_piece(tmp_dot_board, tmp_color_board, next_step, type, None)
+                            tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
+                            node = Node(tmp_dot_board, tmp_color_board, next_step, role, parent_node, tmp_grade)
+                            parent_node.children.add_child(node)
+                            tree.level[level + 1].append(node)
+    return tree
+
+
 dot_board = create_board()
 color_board = create_board()
 print(dot_board)
@@ -283,7 +323,12 @@ step_counter = 1
 step_record = dict()
 
 player1 = input("Player 1 choose side: 1.dot; 2.color")
-player2 = input("Player 2 choose side: 1.dot; 2.color")
+if player1 == 1:
+    player2 = 2
+    print("AI is on color side")
+else:
+    player2 = 1
+    print("AI is on dot side")
 
 while not game_over:
     if step_counter > 60:
@@ -294,56 +339,56 @@ while not game_over:
         if turn == 0:
             string = input("Player 1 turn: ")
         else:
-            string = input("Player 2 turn: ")
+            compute_best_step(dot_board, color_board)
     else:
         if turn == 0:
             string = input("Player 1 turn(recycle): ")
+        # else:
+        # ai_step = recycle_best_step()
+    if string != "":
+        string = string.split(" ")
+        if len(string) == 4:
+            if recycle is True:
+                print("You have no card, please recycle a card from the board.")
+                continue
+            pos = (string[2], string[3])
+            type = string[1]
+
+            piece_pos = get_piece_position(pos, type)
+
+            if is_valid_location(dot_board, piece_pos, type):
+                drop_piece(dot_board, color_board, piece_pos, type, step_record, step_counter)
+            else:
+                print("The operation is illegal")
+                print(string)
+                continue
         else:
-            string = input("Player 2 turn(recycle): ")
-    string = string.split(" ")
+            if recycle is False:
+                print("You still have piece, you cannot recycle a piece.")
+                print("Please put a piece.")
+                continue
+            origin_pos = [(string[0], string[1]), (string[2], string[3])]
+            origin_pos_str = to_string(origin_pos)
+            new_type = string[4]
+            new_pos_1st = (string[5], string[6])
+            new_pos = get_piece_position(new_pos_1st, new_type)
+            new_pos_str = to_string(new_pos)
 
-    if len(string) == 4:
-        if recycle is True:
-            print("You have no card, please recycle a card from the board.")
-            continue
-        pos = (string[2], string[3])
-        type = string[1]
+            if not is_recycle_legal(origin_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
+                continue
 
-        piece_pos = get_piece_position(pos, type)
+            fake_dot_board = dot_board
+            fake_color_board = color_board
+            remove_piece(fake_dot_board, fake_color_board, origin_pos)
 
-        if is_valid_location(dot_board, piece_pos, type):
-            drop_piece(dot_board, color_board, piece_pos, type, step_record, step_counter)
-        else:
-            print("The operation is illegal")
-            print(string)
-            continue
-    else:
-        if recycle is False:
-            print("You still have piece, you cannot recycle a piece.")
-            print("Please put a piece.")
-            continue
-        origin_pos = [(string[0], string[1]), (string[2], string[3])]
-        origin_pos_str = to_string(origin_pos)
-        new_type = string[4]
-        new_pos_1st = (string[5], string[6])
-        new_pos = get_piece_position(new_pos_1st, new_type)
-        new_pos_str = to_string(new_pos)
-
-        if not is_recycle_legal(origin_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
-            continue
-
-        fake_dot_board = dot_board
-        fake_color_board = color_board
-        remove_piece(fake_dot_board, fake_color_board, origin_pos)
-
-        if is_valid_location(fake_dot_board, new_pos, type):
-            remove_piece(dot_board, color_board, origin_pos)
-            step_record.pop(origin_pos_str)
-            drop_piece(dot_board, color_board, new_pos, new_type, step_record, step_counter)
-        else:
-            print("Please select a valid place on the board to recycle.")
-            continue
-    game_over = is_game_over(dot_board, piece_pos, player1, player2)
+            if is_valid_location(fake_dot_board, new_pos, new_type):
+                remove_piece(dot_board, color_board, origin_pos)
+                step_record.pop(origin_pos_str)
+                drop_piece(dot_board, color_board, new_pos, new_type, step_record, step_counter)
+            else:
+                print("Please select a valid place on the board to recycle.")
+                continue
+    game_over = is_game_over(dot_board, color_board, piece_pos, player1, player2)
     print(string)
     print("Dot board    " + str(step_counter) + " round.   dot->1:black,2:white")
     print_board(dot_board)
