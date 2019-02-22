@@ -245,7 +245,7 @@ while not game_over:
         fake_color_board = color_board
         remove_piece(fake_dot_board, fake_color_board, origin_pos)
 
-        if is_valid_location(fake_dot_board, new_pos, type):
+        if is_valid_location(fake_dot_board, new_pos, new_type):
             remove_piece(dot_board, color_board, origin_pos)
             step_record.pop(origin_pos_str)
             drop_piece(dot_board, color_board, new_pos, new_type, step_record, step_counter)
@@ -259,7 +259,7 @@ while not game_over:
     print("Color board    " + str(step_counter) + " round.   color->1:red, 2:white")
     print_board(color_board)
 
-    if step_counter > 24:
+    if step_counter >= 24:
         recycle = True
 
     step_counter += 1
