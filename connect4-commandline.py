@@ -1,6 +1,7 @@
 import numpy as np
-import Tree.Tree as Tree
-import Tree.Node as Node
+from treeBag.Node import Node
+from treeBag.Tree import Tree
+import copy
 from sys import stdin
 
 # numpy , pygame
@@ -27,14 +28,14 @@ def to_string(piece_pos):
     return piece_pos[0][0] + piece_pos[0][1] + piece_pos[1][0] + piece_pos[1][1]
 
 
-def drop_piece(dot_board, color_board, piece_pos, type, step_record, step_counter):
+def drop_piece(dot_board, color_board, piece_pos, type, step_record, step_number=None):
     coordinate = [coordinate_translation(piece_pos[0]), coordinate_translation(piece_pos[1])]
     dot_board[coordinate[0][0]][coordinate[0][1]] = PIECES[type][DOT][0]
     dot_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][DOT][1]
     color_board[coordinate[0][0]][coordinate[0][1]] = PIECES[type][COLOR][0]
     color_board[coordinate[1][0]][coordinate[1][1]] = PIECES[type][COLOR][1]
-    if step_counter is not None:
-        step_record[to_string(piece_pos)] = str(step_counter) + "," + str(type)
+    if step_number is not None:
+        step_record[to_string(piece_pos)] = str(step_number) + "," + str(type)
 
 
 def remove_piece(dot_board, color_board, piece_pos):
@@ -119,7 +120,10 @@ def print_board(board):
 
 
 def coordinate_translation(coordinate):
-    return (int(coordinate[1]) - 1, ord(coordinate[0]) - ord('A'))
+    if type(coordinate[0]) is str:
+        return (int(coordinate[1]) - 1, ord(coordinate[0]) - ord('A'))
+    if type(coordinate[0]) is int:
+        return (chr(ord('A') + coordinate[0]), str(coordinate[1]+1))
 
 
 def get_upper_coordinate(coordinate):
@@ -144,26 +148,26 @@ def heuristic_matrix_estimation(dot_board, color_board):
             color_connected_step, total_grade = horizantal(color_board, r, c, total_grade, color_connected_step, 0)
 
     # Check positively sloped diaganols
-    for r in range(ROW_COUNT):
+    for r in range(ROW_COUNT - 1):
         total_grade = positively_sloped_diaganols(dot_board, r, 0, total_grade, 1)
         total_grade = positively_sloped_diaganols(color_board, r, 0, total_grade, 0)
-    for c in range(COLUMN_COUNT):
-        total_grade = positively_sloped_diaganols(dot_board, ROW_COUNT, c, total_grade, 1)
-        total_grade = positively_sloped_diaganols(color_board, ROW_COUNT, c, total_grade, 0)
+    for c in range(COLUMN_COUNT - 1):
+        total_grade = positively_sloped_diaganols(dot_board, ROW_COUNT - 1, c, total_grade, 1)
+        total_grade = positively_sloped_diaganols(color_board, ROW_COUNT - 1, c, total_grade, 0)
 
     # Check negatively sloped diaganols
-    for c in range(COLUMN_COUNT):
-        total_grade = negatively_sloped_diaganols(dot_board, ROW_COUNT, c, total_grade, 1)
-        total_grade = negatively_sloped_diaganols(color_board, ROW_COUNT, c, total_grade, 0)
-    for r in range(ROW_COUNT):
-        total_grade = negatively_sloped_diaganols(dot_board, r, COLUMN_COUNT, total_grade, 1)
-        total_grade = negatively_sloped_diaganols(color_board, r, COLUMN_COUNT, total_grade, 0)
+    for c in range(COLUMN_COUNT - 1):
+        total_grade = negatively_sloped_diaganols(dot_board, ROW_COUNT - 1, c, total_grade, 1)
+        total_grade = negatively_sloped_diaganols(color_board, ROW_COUNT - 1, c, total_grade, 0)
+    for r in range(ROW_COUNT - 1):
+        total_grade = negatively_sloped_diaganols(dot_board, r, COLUMN_COUNT - 1, total_grade, 1)
+        total_grade = negatively_sloped_diaganols(color_board, r, COLUMN_COUNT - 1, total_grade, 0)
     return total_grade
 
 
 # type=1->dot, type=0->color
 def update_grade(connected_step, total_grade, type):
-    if type == 0:
+    if type == 1:
         total_grade += GRADE_LEVEL[connected_step - 1]
     else:
         total_grade += GRADE_LEVEL[connected_step + 2]
@@ -172,11 +176,11 @@ def update_grade(connected_step, total_grade, type):
 
 def positively_sloped_diaganols(board, r, c, total_grade, type):
     connected_step = 0
-    while r >= 0 and c <= COLUMN_COUNT:
+    while r >= 0 and c < COLUMN_COUNT:
         if board[r][c] != 0:
             connected_step += 1
-            if (r - 1 >= 0 and c + 1 <= COLUMN_COUNT and board[r - 1][c + 1] != board[r][
-                c]) or c == COLUMN_COUNT or r == 0:
+            if (r - 1 >= 0 and c + 1 < COLUMN_COUNT and board[r - 1][c + 1] != board[r][
+                c]) or c == COLUMN_COUNT - 1 or r == 0:
                 total_grade = update_grade(connected_step, total_grade, type)
                 connected_step = 0
         r -= 1
@@ -201,7 +205,7 @@ def negatively_sloped_diaganols(board, r, c, total_grade, type):
 def vertical(board, r, c, total_grade, connected_step, type):
     if board[r][c] != 0:
         connected_step += 1
-        if (r + 1 <= ROW_COUNT and board[r + 1][c] != board[r][c]) or r == ROW_COUNT:
+        if (r + 1 < ROW_COUNT and board[r + 1][c] != board[r][c]) or r == ROW_COUNT - 1:
             total_grade = update_grade(connected_step, total_grade, type)
             connected_step = 0
     return connected_step, total_grade
@@ -210,7 +214,7 @@ def vertical(board, r, c, total_grade, connected_step, type):
 def horizantal(board, r, c, total_grade, connected_step, type):
     if board[r][c] != 0:
         connected_step += 1
-        if (c + 1 <= COLUMN_COUNT and board[r][c + 1] != board[r][c]) or c == COLUMN_COUNT:
+        if (c + 1 < COLUMN_COUNT and board[r][c + 1] != board[r][c]) or c == COLUMN_COUNT - 1:
             total_grade = update_grade(connected_step, total_grade, type)
             connected_step = 0
     return connected_step, total_grade
@@ -249,8 +253,8 @@ def winning_move(board):
 
 
 def is_game_over(dot_board, color_board, piece_pos, player1, player2):
-    dot_win = winning_move(dot_board, piece_pos)
-    color_win = winning_move(color_board, piece_pos)
+    dot_win = winning_move(dot_board)
+    color_win = winning_move(color_board)
     if dot_win and color_win:
         if turn == 0:
             if player1 == "1":
@@ -285,7 +289,7 @@ def build_tree(dot_board, color_board):
     root_grade = heuristic_matrix_estimation(dot_board, color_board)
     root = Node(dot_board, color_board, None, MAX, None, root_grade)
     tree = Tree(root)
-    tree.level[1] = root
+    tree.level[1] = [root]
     tree = extend_tree(tree, 1, MIN)
     tree = extend_tree(tree, 2, MAX)
     return tree
@@ -294,20 +298,20 @@ def build_tree(dot_board, color_board):
 def extend_tree(tree, level, role):
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
-        for r in range(ROW_COUNT):
-            for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT - 1):
+            for c in range(COLUMN_COUNT - 1):
                 if (parent_node.dot_board[r][c] == 0 and r == 0) or (
                         parent_node.dot_board[r - 1][c] != 0 and parent_node.dot_board[r][c] == 0):
                     for i in range(1, 8):
                         type = str(i)
-                        next_step = get_piece_position((r, c), type)
+                        next_step = get_piece_position(coordinate_translation((c, r)), type)
                         if is_valid_location(dot_board, next_step, type):
-                            tmp_dot_board = parent_node.dot_board
-                            tmp_color_board = parent_node.color_board
-                            drop_piece(tmp_dot_board, tmp_color_board, next_step, type, None)
+                            tmp_dot_board = copy.deepcopy(parent_node.dot_board)
+                            tmp_color_board = copy.deepcopy(parent_node.color_board)
+                            drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
                             tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
                             node = Node(tmp_dot_board, tmp_color_board, next_step, role, parent_node, tmp_grade)
-                            parent_node.children.add_child(node)
+                            parent_node.add_child(node)
                             tree.level[level + 1].append(node)
     return tree
 
@@ -352,12 +356,12 @@ while not game_over:
                 print("You have no card, please recycle a card from the board.")
                 continue
             pos = (string[2], string[3])
-            type = string[1]
+            module = string[1]
 
-            piece_pos = get_piece_position(pos, type)
+            piece_pos = get_piece_position(pos, module)
 
-            if is_valid_location(dot_board, piece_pos, type):
-                drop_piece(dot_board, color_board, piece_pos, type, step_record, step_counter)
+            if is_valid_location(dot_board, piece_pos, module):
+                drop_piece(dot_board, color_board, piece_pos, module, step_record, step_counter)
             else:
                 print("The operation is illegal")
                 print(string)
@@ -377,8 +381,8 @@ while not game_over:
             if not is_recycle_legal(origin_pos, origin_pos_str, step_record, new_pos_str, new_type, step_counter):
                 continue
 
-            fake_dot_board = dot_board
-            fake_color_board = color_board
+            fake_dot_board = copy.deepcopy(dot_board)
+            fake_color_board = copy.deepcopy(color_board)
             remove_piece(fake_dot_board, fake_color_board, origin_pos)
 
             if is_valid_location(fake_dot_board, new_pos, new_type):
