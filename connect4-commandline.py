@@ -148,18 +148,18 @@ def heuristic_matrix_estimation(dot_board, color_board):
             color_connected_step, total_grade = horizantal(color_board, r, c, total_grade, color_connected_step, 0)
 
     # Check positively sloped diaganols
-    for r in range(ROW_COUNT - 1):
+    for r in range(ROW_COUNT):
         total_grade = positively_sloped_diaganols(dot_board, r, 0, total_grade, 1)
         total_grade = positively_sloped_diaganols(color_board, r, 0, total_grade, 0)
-    for c in range(COLUMN_COUNT - 1):
+    for c in range(COLUMN_COUNT):
         total_grade = positively_sloped_diaganols(dot_board, ROW_COUNT - 1, c, total_grade, 1)
         total_grade = positively_sloped_diaganols(color_board, ROW_COUNT - 1, c, total_grade, 0)
 
     # Check negatively sloped diaganols
-    for c in range(COLUMN_COUNT - 1):
+    for c in range(COLUMN_COUNT):
         total_grade = negatively_sloped_diaganols(dot_board, ROW_COUNT - 1, c, total_grade, 1)
         total_grade = negatively_sloped_diaganols(color_board, ROW_COUNT - 1, c, total_grade, 0)
-    for r in range(ROW_COUNT - 1):
+    for r in range(ROW_COUNT):
         total_grade = negatively_sloped_diaganols(dot_board, r, COLUMN_COUNT - 1, total_grade, 1)
         total_grade = negatively_sloped_diaganols(color_board, r, COLUMN_COUNT - 1, total_grade, 0)
     return total_grade
@@ -298,11 +298,11 @@ def build_tree(dot_board, color_board):
 def extend_tree(tree, level, role):
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
-        for r in range(ROW_COUNT - 1):
-            for c in range(COLUMN_COUNT - 1):
+        for r in range(ROW_COUNT):
+            for c in range(COLUMN_COUNT):
                 if (parent_node.dot_board[r][c] == 0 and r == 0) or (
                         parent_node.dot_board[r - 1][c] != 0 and parent_node.dot_board[r][c] == 0):
-                    for i in range(1, 8):
+                    for i in range(1, 9):
                         type = str(i)
                         next_step = get_piece_position(coordinate_translation((c, r)), type)
                         if is_valid_location(dot_board, next_step, type):
