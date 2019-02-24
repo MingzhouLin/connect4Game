@@ -123,7 +123,7 @@ def coordinate_translation(coordinate):
     if type(coordinate[0]) is str:
         return (int(coordinate[1]) - 1, ord(coordinate[0]) - ord('A'))
     if type(coordinate[0]) is int:
-        return (chr(ord('A') + coordinate[0]), str(coordinate[1]+1))
+        return (chr(ord('A') + coordinate[0]), str(coordinate[1] + 1))
 
 
 def get_upper_coordinate(coordinate):
@@ -286,16 +286,18 @@ def compute_best_step(dot_board, color_board):
 
 
 def build_tree(dot_board, color_board):
+    node_id = 0
     root_grade = heuristic_matrix_estimation(dot_board, color_board)
-    root = Node(dot_board, color_board, None, MAX, None, root_grade)
+    root = Node(node_id, dot_board, color_board, None, MAX, None, root_grade)
+    node_id += 1
     tree = Tree(root)
     tree.level[1] = [root]
-    tree = extend_tree(tree, 1, MIN)
-    tree = extend_tree(tree, 2, MAX)
+    node_id, tree = extend_tree(tree, 1, MIN, node_id)
+    node_id, tree = extend_tree(tree, 2, MAX, node_id)
     return tree
 
 
-def extend_tree(tree, level, role):
+def extend_tree(tree, level, role, node_id):
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
         for r in range(ROW_COUNT):
@@ -310,10 +312,12 @@ def extend_tree(tree, level, role):
                             tmp_color_board = copy.deepcopy(parent_node.color_board)
                             drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
                             tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
-                            node = Node(tmp_dot_board, tmp_color_board, next_step, role, parent_node, tmp_grade)
+                            node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, role, parent_node,
+                                        tmp_grade)
+                            node_id += 1
                             parent_node.add_child(node)
                             tree.level[level + 1].append(node)
-    return tree
+    return node_id, tree
 
 
 dot_board = create_board()
