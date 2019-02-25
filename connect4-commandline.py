@@ -283,21 +283,65 @@ def is_game_over(dot_board, color_board, piece_pos, player1, player2):
 
 def compute_best_step(dot_board, color_board):
     tree = build_tree(dot_board, color_board)
+    res_node = minimax(tree)
+    return res_node
+
+def get_next_ai_move_string(ai_next_piece):
+    string = "0 " + ai_next_piece.last_piece_type + " " + ai_next_piece.last_piece_pos[0][0] \
+             + " " + ai_next_piece.last_piece_pos[0][1]
+    return string
+
+
+
 
 
 def build_tree(dot_board, color_board):
+
     node_id = 0
     root_grade = heuristic_matrix_estimation(dot_board, color_board)
-    root = Node(node_id, dot_board, color_board, None, MAX, None, root_grade)
+    root = Node(node_id, dot_board, color_board, None, MAX, None, root_grade, False, None, None)
     node_id += 1
     tree = Tree(root)
     tree.level[1] = [root]
-    node_id, tree = extend_tree(tree, 1, MIN, node_id)
-    node_id, tree = extend_tree(tree, 2, MAX, node_id)
+    # could set a cut-off to set the leaf level
+    node_id, tree = extend_tree(tree, 1, MIN, node_id, False)
+    node_id, tree = extend_tree(tree, 2, MAX, node_id, True)
     return tree
 
 
-def extend_tree(tree, level, role, node_id):
+def minimax(tree):
+    tree_depth = len(tree.level)
+
+
+    for i in range(tree_depth-1,0,-1):
+        print(i)
+        for n in tree.level[i]:
+            opt_value = 0.0
+            option = n.level_type
+            if n.level_type is MAX:
+                opt_value = float('-inf')  #
+            else:
+                opt_value = float('inf')  #
+            for child in n.children:
+                if option is MAX:
+                    if child.grade > opt_value:
+                        opt_value = child.grade
+                        n.next_move = child
+
+                else:
+                    if child.grade < opt_value:
+                        opt_value = child.grade
+                        n.next_move = child
+            n.grade = opt_value
+    return tree.root.next_move
+
+
+
+
+
+
+
+def extend_tree(tree, level, role, node_id, is_leaf):
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
         for r in range(ROW_COUNT):
@@ -313,7 +357,7 @@ def extend_tree(tree, level, role, node_id):
                             drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
                             tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
                             node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, role, parent_node,
-                                        tmp_grade)
+                                        tmp_grade, is_leaf,next_step,type)
                             node_id += 1
                             parent_node.add_child(node)
                             tree.level[level + 1].append(node)
@@ -347,7 +391,9 @@ while not game_over:
         if turn == 0:
             string = input("Player 1 turn: ")
         else:
-            compute_best_step(dot_board, color_board)
+            ai_next_piece = compute_best_step(dot_board, color_board)
+            string = get_next_ai_move_string(ai_next_piece)
+
     else:
         if turn == 0:
             string = input("Player 1 turn(recycle): ")
