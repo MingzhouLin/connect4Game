@@ -12,7 +12,7 @@ PIECES = {"1": {"dot": (1, 2), "color": (1, 2)}, "2": {"dot": (2, 1), "color": (
           "5": {"dot": (2, 1), "color": (1, 2)}, "6": {"dot": (1, 2), "color": (2, 1)},
           "7": {"dot": (1, 2), "color": (2, 1)},
           "8": {"dot": (2, 1), "color": (1, 2)}}  # dot->1:black,2:white; color->1:red, 2:white
-GRADE_LEVEL = [10, 100, 1000, -10, -100, -1000]
+GRADE_LEVEL = [10, 100, 1000, 10000,  -10, -100, -1000, -10000]
 DOT = "dot"
 COLOR = "color"
 MIN = "min"
@@ -170,7 +170,7 @@ def update_grade(connected_step, total_grade, type):
     if type == 1:
         total_grade += GRADE_LEVEL[connected_step - 1]
     else:
-        total_grade += GRADE_LEVEL[connected_step + 2]
+        total_grade += GRADE_LEVEL[connected_step + 3]
     return total_grade
 
 
@@ -286,17 +286,14 @@ def compute_best_step(dot_board, color_board):
     res_node = minimax(tree)
     return res_node
 
+
 def get_next_ai_move_string(ai_next_piece):
     string = "0 " + ai_next_piece.last_piece_type + " " + ai_next_piece.last_piece_pos[0][0] \
              + " " + ai_next_piece.last_piece_pos[0][1]
     return string
 
 
-
-
-
 def build_tree(dot_board, color_board):
-
     node_id = 0
     root_grade = heuristic_matrix_estimation(dot_board, color_board)
     root = Node(node_id, dot_board, color_board, None, MAX, None, root_grade, False, None, None)
@@ -312,8 +309,7 @@ def build_tree(dot_board, color_board):
 def minimax(tree):
     tree_depth = len(tree.level)
 
-
-    for i in range(tree_depth-1,0,-1):
+    for i in range(tree_depth - 1, 0, -1):
         print(i)
         for n in tree.level[i]:
             opt_value = 0.0
@@ -336,11 +332,6 @@ def minimax(tree):
     return tree.root.next_move
 
 
-
-
-
-
-
 def extend_tree(tree, level, role, node_id, is_leaf):
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
@@ -357,7 +348,7 @@ def extend_tree(tree, level, role, node_id, is_leaf):
                             drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
                             tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
                             node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, role, parent_node,
-                                        tmp_grade, is_leaf,next_step,type)
+                                        tmp_grade, is_leaf, next_step, type)
                             node_id += 1
                             parent_node.add_child(node)
                             tree.level[level + 1].append(node)
