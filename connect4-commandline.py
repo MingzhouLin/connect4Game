@@ -288,15 +288,15 @@ def compute_best_step(dot_board, color_board):
 
 
 def get_next_ai_move_string(ai_next_piece):
-    string = "0 " + ai_next_piece.last_piece_type + " " + ai_next_piece.last_piece_pos[0][0] \
-             + " " + ai_next_piece.last_piece_pos[0][1]
+    string = "0 " + ai_next_piece.last_piece_type + " " + ai_next_piece.step[0][0] \
+             + " " + ai_next_piece.step[0][1]
     return string
 
 
 def build_tree(dot_board, color_board):
     node_id = 0
     root_grade = heuristic_matrix_estimation(dot_board, color_board)
-    root = Node(node_id, dot_board, color_board, None, MAX, None, root_grade, False, None, None)
+    root = Node(node_id, dot_board, color_board, None, MAX, None, root_grade, None)
     node_id += 1
     tree = Tree(root)
     tree.level[1] = [root]
@@ -348,7 +348,7 @@ def extend_tree(tree, level, role, node_id, is_leaf):
                             drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
                             tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
                             node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, role, parent_node,
-                                        tmp_grade, is_leaf, next_step, type)
+                                        tmp_grade, type)
                             node_id += 1
                             parent_node.add_child(node)
                             tree.level[level + 1].append(node)
