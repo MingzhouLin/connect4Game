@@ -281,9 +281,18 @@ def is_game_over(dot_board, color_board, piece_pos, player1, player2):
         return True
 
 
-def compute_best_step(dot_board, color_board):
+def compute_best_step(dot_board, color_board, mode):
     tree = build_tree(dot_board, color_board)
-    res_node = minimax(tree)
+    if mode is "1":
+        res_node = minimax(tree)
+    else:
+        grade_of_root = alphabeta(tree.root,float('-inf') ,float('+inf') ,3)
+        for child in tree.root.children:
+            if child.grade is grade_of_root:
+                tree.root.next_move = child
+                res_node = child
+                break
+
     return res_node
 
 
@@ -296,24 +305,32 @@ def get_next_ai_move_string(ai_next_piece):
 def build_tree(dot_board, color_board):
     node_id = 0
     root_grade = heuristic_matrix_estimation(dot_board, color_board)
-    root = Node(node_id, dot_board, color_board, None, MAX, None, root_grade, None)
+    root = Node(node_id, dot_board, color_board, None, 1, MAX, None, root_grade, None)
     node_id += 1
     tree = Tree(root)
     tree.level[1] = [root]
     # could set a cut-off to set the leaf level
-    node_id, tree = extend_tree(tree, 1, MIN, node_id, False)
-    node_id, tree = extend_tree(tree, 2, MAX, node_id, True)
+    node_id, tree = extend_tree(tree, 1, MIN, node_id)
+    node_id, tree = extend_tree(tree, 2, MAX, node_id)
     return tree
 
 
 def minimax(tree):
     tree_depth = len(tree.level)
 
-    for i in range(tree_depth - 1, 0, -1):
+    for i in range(tree_depth, 0, -1):
         print(i)
         for n in tree.level[i]:
+
+            if len(n.children) is 0:
+                n.grade = heuristic_matrix_estimation(n.dot_board, n.color_board)
+                continue
+
             opt_value = 0.0
             option = n.level_type
+
+
+
             if n.level_type is MAX:
                 opt_value = float('-inf')  #
             else:
@@ -331,8 +348,35 @@ def minimax(tree):
             n.grade = opt_value
     return tree.root.next_move
 
+def alphabeta(node,alpha,beta,depth):
+    if node.level == depth:
+        node.grade = heuristic_matrix_estimation(node.dot_board, node.color_board)
+        return node.grade
+    else:
+        if node.level_type is MAX:
+            for child in node.children:
+                alpha = max(alpha, alphabeta(child,alpha,beta, depth))
+                if alpha >=beta:
+                    node.grade =alpha
+                    return alpha
+            node.grade =alpha
+            return alpha
 
-def extend_tree(tree, level, role, node_id, is_leaf):
+        else:
+            for child in node.children:
+                beta = min(beta, alphabeta(child,alpha,beta, depth))
+                if beta <= alpha:
+                    node.grade= beta
+                    return beta
+            node.grade=beta
+            return beta
+
+
+
+
+
+
+def extend_tree(tree, level, role, node_id):
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
         for r in range(ROW_COUNT):
@@ -346,8 +390,12 @@ def extend_tree(tree, level, role, node_id, is_leaf):
                             tmp_dot_board = copy.deepcopy(parent_node.dot_board)
                             tmp_color_board = copy.deepcopy(parent_node.color_board)
                             drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
-                            tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
-                            node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, role, parent_node,
+
+                            #tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
+                            #calculate the grad later in minimax or alpha-beta
+
+                            tmp_grade = 0
+                            node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, level+1, role, parent_node,
                                         tmp_grade, type)
                             node_id += 1
                             parent_node.add_child(node)
@@ -364,6 +412,8 @@ turn = 0
 recycle = False
 step_counter = 1
 step_record = dict()
+
+ai_mode = input("Please input AI mode. 1. minimax  2. alpha-beta")
 
 player1 = input("Player 1 choose side: 1.dot; 2.color")
 if player1 == 1:
@@ -382,7 +432,7 @@ while not game_over:
         if turn == 0:
             string = input("Player 1 turn: ")
         else:
-            ai_next_piece = compute_best_step(dot_board, color_board)
+            ai_next_piece = compute_best_step(dot_board, color_board, ai_mode)
             string = get_next_ai_move_string(ai_next_piece)
 
     else:
