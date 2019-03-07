@@ -202,7 +202,7 @@ def winning_move(board):
     return False
 
 
-def is_game_over(dot_board, color_board, piece_pos, player1, player2):
+def is_game_over(dot_board, color_board, player1, player2):
     dot_win = winning_move(dot_board)
     color_win = winning_move(color_board)
     if dot_win and color_win:
@@ -232,7 +232,7 @@ def is_game_over(dot_board, color_board, piece_pos, player1, player2):
 
 
 
-def compute_best_step(dot_board, color_board, mode):
+def compute_best_step(dot_board, color_board, mode, is_recycle):
 
     global root_grade
     global times_of_e
@@ -387,14 +387,16 @@ def extend_tree(tree, level, role, node_id,is_recycle):
                             for i in range(1, 9):
                                 type = str(i)
                                 next_step = get_piece_position(coordinate_translation((c, r)), type)
-                                if is_valid_location(dot_board, next_step, type):
-                                    drop_piece(board[0], board[1], next_step, type, step_record, None)
+                                if is_valid_location(board[0], next_step, type):
+                                    tmp_dot_board = board[0]
+                                    tmp_color_board = board[1]
+                                    drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
 
                                     # tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
                                     # calculate the grad later in minimax or alpha-beta
 
                                     tmp_grade = 0
-                                    node = Node(node_id, board[0], board[1], next_step, level + 1, role,
+                                    node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, level + 1, role,
                                                 parent_node,
                                                 tmp_grade, type)
                                     node_id += 1
@@ -405,7 +407,7 @@ def extend_tree(tree, level, role, node_id,is_recycle):
 
 def get_all_possible_remove_pieces(step_record):
     boards = list()
-    for step in step_record.items:
+    for step in step_record.items():
         origin_type = step[1].split(",")[1]
         origin_position = [(step[0][0], step[0][1]), (step[0][2], step[0][3])]
         if check_upper_piece(origin_type, origin_position):
@@ -445,22 +447,21 @@ while not game_over:
         if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
             string = input("Human turn: ")
         else:
-            tree = compute_best_step(dot_board, color_board, ai_mode)
-            dot_board = tree.next_move.dot_board
-            color_board = tree.next_move.color_board
+            tree = compute_best_step(dot_board, color_board, ai_mode, False)
+            dot_board = tree.root.next_move.dot_board
+            color_board = tree.root.next_move.color_board
             print_board(dot_board)
             print_board(color_board)
     else:
         if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
             string = input("Player 1 turn(recycle): ")
         else:
-            tree = compute_best_step(dot_board, color_board, True)
-            dot_board = tree.next_move.dot_board
-            color_board = tree.next_move.color_board
+            tree = compute_best_step(dot_board, color_board, ai_mode, True)
+            dot_board = tree.root.next_move.dot_board
+            color_board = tree.root.next_move.color_board
             print_board(dot_board)
             print_board(color_board)
     if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
-        string = input("Player 1 turn(recycle): ")
         if string != "":
             string = string.split(" ")
             if len(string) == 4:
@@ -504,14 +505,14 @@ while not game_over:
                 else:
                     print("Please select a valid place on the board to recycle.")
                     continue
-    game_over = is_game_over(dot_board, color_board, piece_pos, side1, side2)
-    print(string)
+    game_over = is_game_over(dot_board, color_board, side1, side2)
+    # print(string)
     print("Dot board    " + str(step_counter) + " round.   dot->1:black,2:white")
     print_board(dot_board)
     print("Color board    " + str(step_counter) + " round.   color->1:red, 2:white")
     print_board(color_board)
 
-    if step_counter > 24:
+    if step_counter >= 2:
         recycle = True
 
     step_counter += 1
