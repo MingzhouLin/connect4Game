@@ -12,7 +12,7 @@ PIECES = {"1": {"dot": (1, 2), "color": (1, 2)}, "2": {"dot": (2, 1), "color": (
           "5": {"dot": (2, 1), "color": (1, 2)}, "6": {"dot": (1, 2), "color": (2, 1)},
           "7": {"dot": (1, 2), "color": (2, 1)},
           "8": {"dot": (2, 1), "color": (1, 2)}}  # dot->1:black,2:white; color->1:red, 2:white
-GRADE_LEVEL = [10, 100, 1000, 10000,  -10, -100, -1000, -10000]
+GRADE_LEVEL = [10, 100, 1000, 10000, -10, -100, -1000, -10000]
 DOT = "dot"
 COLOR = "color"
 MIN = "min"
@@ -286,7 +286,7 @@ def compute_best_step(dot_board, color_board, mode):
     if mode is "1":
         res_node = minimax(tree)
     else:
-        grade_of_root = alphabeta(tree.root,float('-inf') ,float('+inf') ,3)
+        grade_of_root = alphabeta(tree.root, float('-inf'), float('+inf'), 3)
         for child in tree.root.children:
             if child.grade is grade_of_root:
                 tree.root.next_move = child
@@ -329,8 +329,6 @@ def minimax(tree):
             opt_value = 0.0
             option = n.level_type
 
-
-
             if n.level_type is MAX:
                 opt_value = float('-inf')  #
             else:
@@ -348,32 +346,29 @@ def minimax(tree):
             n.grade = opt_value
     return tree.root.next_move
 
-def alphabeta(node,alpha,beta,depth):
+
+def alphabeta(node, alpha, beta, depth):
     if node.level == depth:
         node.grade = heuristic_matrix_estimation(node.dot_board, node.color_board)
         return node.grade
     else:
         if node.level_type is MAX:
             for child in node.children:
-                alpha = max(alpha, alphabeta(child,alpha,beta, depth))
-                if alpha >=beta:
-                    node.grade =alpha
+                alpha = max(alpha, alphabeta(child, alpha, beta, depth))
+                if alpha >= beta:
+                    node.grade = alpha
                     return alpha
-            node.grade =alpha
+            node.grade = alpha
             return alpha
 
         else:
             for child in node.children:
-                beta = min(beta, alphabeta(child,alpha,beta, depth))
+                beta = min(beta, alphabeta(child, alpha, beta, depth))
                 if beta <= alpha:
-                    node.grade= beta
+                    node.grade = beta
                     return beta
-            node.grade=beta
+            node.grade = beta
             return beta
-
-
-
-
 
 
 def extend_tree(tree, level, role, node_id):
@@ -391,11 +386,12 @@ def extend_tree(tree, level, role, node_id):
                             tmp_color_board = copy.deepcopy(parent_node.color_board)
                             drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
 
-                            #tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
-                            #calculate the grad later in minimax or alpha-beta
+                            # tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
+                            # calculate the grad later in minimax or alpha-beta
 
                             tmp_grade = 0
-                            node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, level+1, role, parent_node,
+                            node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, level + 1, role,
+                                        parent_node,
                                         tmp_grade, type)
                             node_id += 1
                             parent_node.add_child(node)
