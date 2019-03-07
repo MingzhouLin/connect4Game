@@ -12,15 +12,25 @@ PIECES = {"1": {"dot": (1, 2), "color": (1, 2)}, "2": {"dot": (2, 1), "color": (
           "5": {"dot": (2, 1), "color": (1, 2)}, "6": {"dot": (1, 2), "color": (2, 1)},
           "7": {"dot": (1, 2), "color": (2, 1)},
           "8": {"dot": (2, 1), "color": (1, 2)}}  # dot->1:black,2:white; color->1:red, 2:white
-GRADE_LEVEL = [10, 100, 1000, 10000, -10, -100, -1000, -10000]
 DOT = "dot"
 COLOR = "color"
 MIN = "min"
 MAX = "max"
 
 
+def create_weight_board():
+    b = list()
+    for i in range(8):
+        start_num = 10 * i + 1
+        b.append(np.arange(start_num, start_num + 8))
+    return b
+
+
+WEIGHT_BOARD = create_weight_board()
+
+
 def create_board():
-    board = np.zeros((ROW_COUNT, COLUMN_COUNT))
+    board = np.zeros((ROW_COUNT, COLUMN_COUNT), dtype=np.int)
     return board
 
 
@@ -131,93 +141,14 @@ def get_upper_coordinate(coordinate):
 
 
 def heuristic_matrix_estimation(dot_board, color_board):
-    # Check vertical
-    total_grade = 0
-    for c in range(COLUMN_COUNT):
-        dot_connected_step = 0
-        color_connected_step = 0
-        for r in range(ROW_COUNT):
-            dot_connected_step, total_grade = vertical(dot_board, r, c, total_grade, dot_connected_step, 1)
-            color_connected_step, total_grade = vertical(color_board, r, c, total_grade, color_connected_step, 0)
-    # Check horizantal
+    clique = {"11": 0, "12": 0, "21": 0, "22": 0}
     for r in range(ROW_COUNT):
-        dot_connected_step = 0
-        color_connected_step = 0
         for c in range(COLUMN_COUNT):
-            dot_connected_step, total_grade = horizantal(dot_board, r, c, total_grade, dot_connected_step, 1)
-            color_connected_step, total_grade = horizantal(color_board, r, c, total_grade, color_connected_step, 0)
-
-    # Check positively sloped diaganols
-    for r in range(ROW_COUNT):
-        total_grade = positively_sloped_diaganols(dot_board, r, 0, total_grade, 1)
-        total_grade = positively_sloped_diaganols(color_board, r, 0, total_grade, 0)
-    for c in range(COLUMN_COUNT):
-        total_grade = positively_sloped_diaganols(dot_board, ROW_COUNT - 1, c, total_grade, 1)
-        total_grade = positively_sloped_diaganols(color_board, ROW_COUNT - 1, c, total_grade, 0)
-
-    # Check negatively sloped diaganols
-    for c in range(COLUMN_COUNT):
-        total_grade = negatively_sloped_diaganols(dot_board, ROW_COUNT - 1, c, total_grade, 1)
-        total_grade = negatively_sloped_diaganols(color_board, ROW_COUNT - 1, c, total_grade, 0)
-    for r in range(ROW_COUNT):
-        total_grade = negatively_sloped_diaganols(dot_board, r, COLUMN_COUNT - 1, total_grade, 1)
-        total_grade = negatively_sloped_diaganols(color_board, r, COLUMN_COUNT - 1, total_grade, 0)
-    return total_grade
-
-
-# type=1->dot, type=0->color
-def update_grade(connected_step, total_grade, type):
-    if type == 1:
-        total_grade += GRADE_LEVEL[connected_step - 1]
-    else:
-        total_grade += GRADE_LEVEL[connected_step + 3]
-    return total_grade
-
-
-def positively_sloped_diaganols(board, r, c, total_grade, type):
-    connected_step = 0
-    while r >= 0 and c < COLUMN_COUNT:
-        if board[r][c] != 0:
-            connected_step += 1
-            if (r - 1 >= 0 and c + 1 < COLUMN_COUNT and board[r - 1][c + 1] != board[r][
-                c]) or c == COLUMN_COUNT - 1 or r == 0:
-                total_grade = update_grade(connected_step, total_grade, type)
-                connected_step = 0
-        r -= 1
-        c += 1
-    return total_grade
-
-
-def negatively_sloped_diaganols(board, r, c, total_grade, type):
-    connected_step = 0
-    while r >= 0 and c >= 0:
-        if board[r][c] != 0:
-            connected_step += 1
-            if (r - 1 >= 0 and c - 1 >= 0 and board[r - 1][c - 1] != board[r][
-                c]) or c == 0 or r == 0:
-                total_grade = update_grade(connected_step, total_grade, type)
-                connected_step = 0
-        r -= 1
-        c -= 1
-    return total_grade
-
-
-def vertical(board, r, c, total_grade, connected_step, type):
-    if board[r][c] != 0:
-        connected_step += 1
-        if (r + 1 < ROW_COUNT and board[r + 1][c] != board[r][c]) or r == ROW_COUNT - 1:
-            total_grade = update_grade(connected_step, total_grade, type)
-            connected_step = 0
-    return connected_step, total_grade
-
-
-def horizantal(board, r, c, total_grade, connected_step, type):
-    if board[r][c] != 0:
-        connected_step += 1
-        if (c + 1 < COLUMN_COUNT and board[r][c + 1] != board[r][c]) or c == COLUMN_COUNT - 1:
-            total_grade = update_grade(connected_step, total_grade, type)
-            connected_step = 0
-    return connected_step, total_grade
+            if color_board[r][c] != 0:
+                key = str(color_board[r][c]) + str(dot_board[r][c])
+                clique[key] += WEIGHT_BOARD[r][c]
+    grade = clique["22"] + 3 * clique["21"] - 2 * clique["11"] - 1.5 * clique["12"]
+    return grade
 
 
 def winning_move(board):
@@ -304,7 +235,7 @@ def get_next_ai_move_string(ai_next_piece):
 
 def build_tree(dot_board, color_board):
     node_id = 0
-    root_grade = heuristic_matrix_estimation(dot_board, color_board)
+    root_grade = 0
     root = Node(node_id, dot_board, color_board, None, 1, MAX, None, root_grade, None)
     node_id += 1
     tree = Tree(root)
@@ -410,14 +341,15 @@ step_counter = 1
 step_record = dict()
 
 ai_mode = input("Please input AI mode. 1. minimax  2. alpha-beta")
-
-player1 = input("Player 1 choose side: 1.dot; 2.color")
-if player1 == 1:
-    player2 = 2
-    print("AI is on color side")
+player1 = input("If AI plays as player1: 1.yes; 2.no")
+player1 = int(player1)
+side1 = input("Player 1 choose side: 1.dot; 2.color")
+if side1 == 1:
+    side2 = 2
+    print("Player2 is on color side")
 else:
-    player2 = 1
-    print("AI is on dot side")
+    side2 = 1
+    print("Player2 is on dot side")
 
 while not game_over:
     if step_counter > 60:
@@ -425,12 +357,11 @@ while not game_over:
         break
     # Ask for Player 1 Input
     if not recycle:
-        if turn == 0:
-            string = input("Player 1 turn: ")
+        if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
+            string = input("Human turn: ")
         else:
             ai_next_piece = compute_best_step(dot_board, color_board, ai_mode)
             string = get_next_ai_move_string(ai_next_piece)
-
     else:
         if turn == 0:
             string = input("Player 1 turn(recycle): ")
@@ -479,7 +410,7 @@ while not game_over:
             else:
                 print("Please select a valid place on the board to recycle.")
                 continue
-    game_over = is_game_over(dot_board, color_board, piece_pos, player1, player2)
+    game_over = is_game_over(dot_board, color_board, piece_pos, side1, side2)
     print(string)
     print("Dot board    " + str(step_counter) + " round.   dot->1:black,2:white")
     print_board(dot_board)
