@@ -17,6 +17,20 @@ COLOR = "color"
 MIN = "min"
 MAX = "max"
 
+root_grade = 0
+times_of_e = 0
+level_2_content = "\n"
+
+def resetTRACE_CONTENT():
+    global root_grade
+    global times_of_e
+    global level_2_content
+
+    root_grade = 0
+    times_of_e = 0
+    level_2_content = "\n"
+
+
 
 def create_weight_board():
     b = list()
@@ -217,8 +231,16 @@ def is_game_over(dot_board, color_board, piece_pos, player1, player2):
         return True
 
 
-def compute_best_step(dot_board, color_board, mode, is_recycle):
+
+def compute_best_step(dot_board, color_board, mode):
+
+    global root_grade
+    global times_of_e
+    global level_2_content
+
+    resetTRACE_CONTENT()
     tree = build_tree(dot_board, color_board, is_recycle)
+
     if mode is "1":
         res_node = minimax(tree)
     else:
@@ -228,6 +250,7 @@ def compute_best_step(dot_board, color_board, mode, is_recycle):
                 tree.root.next_move = child
                 res_node = child
                 break
+    write_trace_file(times_of_e, root_grade, level_2_content)
 
     return tree
 
@@ -251,15 +274,28 @@ def build_tree(dot_board, color_board, is_recycle):
     return tree
 
 
+def write_trace_file(times_of_e, root_grade, level_2_content):
+    content = str(times_of_e) + "\n" +str(root_grade)+"\n" +level_2_content
+    file = open('TraceOut.txt','w')
+    file.write(content)
+    file.close()
+
+
 def minimax(tree):
+    #trace parameters
+    global root_grade
+    global times_of_e
+    global level_2_content
+
+
     tree_depth = len(tree.level)
 
     for i in range(tree_depth, 0, -1):
-        print(i)
         for n in tree.level[i]:
 
             if len(n.children) is 0:
                 n.grade = heuristic_matrix_estimation(n.dot_board, n.color_board)
+                times_of_e = times_of_e + 1
                 continue
 
             opt_value = 0.0
@@ -280,12 +316,19 @@ def minimax(tree):
                         opt_value = child.grade
                         n.next_move = child
             n.grade = opt_value
+            if n.level_type is MIN:
+                level_2_content = level_2_content+str(n.grade)+"\n"
+    root_grade = tree.root.grade
+
     return tree.root.next_move
 
-
-def alphabeta(node, alpha, beta, depth):
+def alphabeta(node,alpha,beta,depth):
+    global root_grade
+    global times_of_e
+    global level_2_content
     if node.level == depth:
         node.grade = heuristic_matrix_estimation(node.dot_board, node.color_board)
+        times_of_e = times_of_e +1
         return node.grade
     else:
         if node.level_type is MAX:
@@ -301,13 +344,17 @@ def alphabeta(node, alpha, beta, depth):
             for child in node.children:
                 beta = min(beta, alphabeta(child, alpha, beta, depth))
                 if beta <= alpha:
-                    node.grade = beta
+                    node.grade= beta
+                    level_2_content = level_2_content + str(node.grade) +"\n"
                     return beta
             node.grade = beta
+            level_2_content = level_2_content + str(node.grade) + "\n"
             return beta
 
 
-def extend_tree(tree, level, role, node_id, is_recycle):
+
+def extend_tree(tree, level, role, node_id,is_recycle):
+
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
         for r in range(ROW_COUNT):
@@ -422,7 +469,7 @@ while not game_over:
                     continue
                 pos = (string[2], string[3])
                 module = string[1]
-    
+
                 piece_pos = get_piece_position(pos, module)
 
                 if is_valid_location(dot_board, piece_pos, module):
