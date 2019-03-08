@@ -17,6 +17,8 @@ COLOR = "color"
 MIN = "min"
 MAX = "max"
 
+RECYCLE_TIME = 4
+
 root_grade = 0
 times_of_e = 0
 level_2_content = "\n"
@@ -232,13 +234,13 @@ def is_game_over(dot_board, color_board, player1, player2):
         return True
 
 
-def compute_best_step(dot_board, color_board, mode, is_recycle):
+def compute_best_step(dot_board, color_board, mode, current_step):
     global root_grade
     global times_of_e
     global level_2_content
 
     resetTRACE_CONTENT()
-    tree = build_tree(dot_board, color_board, is_recycle)
+    tree = build_tree(dot_board, color_board, current_step)
 
     if mode is "1":
         res_node = minimax(tree)
@@ -260,7 +262,7 @@ def get_next_ai_move_string(ai_next_piece):
     return string
 
 
-def build_tree(dot_board, color_board, is_recycle):
+def build_tree(dot_board, color_board, current_step):
     node_id = 0
     root_grade = 0
     root = Node(node_id, dot_board, color_board, None, 1, MAX, None, root_grade, None)
@@ -268,14 +270,14 @@ def build_tree(dot_board, color_board, is_recycle):
     tree = Tree(root)
     tree.level[1] = [root]
     # could set a cut-off to set the leaf level
-    node_id, tree = extend_tree(tree, 1, MIN, node_id, is_recycle)
-    node_id, tree = extend_tree(tree, 2, MAX, node_id, is_recycle)
+    node_id, tree = extend_tree(tree, 1, MIN, node_id, current_step)
+    node_id, tree = extend_tree(tree, 2, MAX, node_id, current_step+1)
     return tree
 
 
 def write_trace_file(times_of_e, root_grade, level_2_content):
     content = str(times_of_e) + "\n" + str(root_grade) + "\n" + level_2_content
-    file = open('TraceOut.txt', 'w')
+    file = open('TraceOut.txt', 'a')
     file.write(content)
     file.close()
 
@@ -351,12 +353,12 @@ def alphabeta(node, alpha, beta, depth):
             return beta
 
 
-def extend_tree(tree, level, role, node_id, is_recycle):
+def extend_tree(tree, level, role, node_id, current_step):
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
         for r in range(ROW_COUNT):
             for c in range(COLUMN_COUNT):
-                if not is_recycle:
+                if current_step < 24:
                     if (parent_node.dot_board[r][c] == 0 and r == 0) or (
                             parent_node.dot_board[r - 1][c] != 0 and parent_node.dot_board[r][c] == 0):
                         for i in range(1, 9):
@@ -459,7 +461,7 @@ while not game_over:
         if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
             string = input("Human turn: ")
         else:
-            tree = compute_best_step(dot_board, color_board, ai_mode, False)
+            tree = compute_best_step(dot_board, color_board, ai_mode, step_counter)
             dot_board = tree.root.next_move.dot_board
             color_board = tree.root.next_move.color_board
 
@@ -470,7 +472,7 @@ while not game_over:
         if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
             string = input("Player 1 turn(recycle): ")
         else:
-            tree = compute_best_step(dot_board, color_board, ai_mode, True)
+            tree = compute_best_step(dot_board, color_board, ai_mode, step_counter)
             dot_board = tree.root.next_move.dot_board
             color_board = tree.root.next_move.color_board
             step_record[to_string(tree.root.next_move.step)] = str(step_counter) + "," + str(
@@ -528,7 +530,7 @@ while not game_over:
     print("Color board    " + str(step_counter) + " round.   color->1:red, 2:white")
     print_board(color_board)
 
-    if step_counter >= 2:
+    if step_counter >= RECYCLE_TIME:
         recycle = True
 
     print(step_record)
