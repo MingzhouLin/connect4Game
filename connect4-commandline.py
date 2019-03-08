@@ -370,8 +370,10 @@ def extend_tree(tree, level, role, node_id,is_recycle):
                                 tmp_color_board = copy.deepcopy(parent_node.color_board)
                                 drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
 
+
                                 # tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
                                 # calculate the grad later in minimax or alpha-beta
+
 
                                 tmp_grade = 0
                                 node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, level + 1, role,
@@ -408,12 +410,14 @@ def extend_tree(tree, level, role, node_id,is_recycle):
 def get_all_possible_remove_pieces(step_record):
     boards = list()
     for step in step_record.items():
-        origin_type = step[1].split(",")[1]
-        origin_position = [(step[0][0], step[0][1]), (step[0][2], step[0][3])]
-        if check_upper_piece(origin_type, origin_position):
-            temp_dot_board = copy.deepcopy(dot_board)
-            temp_color_board = copy.deepcopy(color_board)
-            boards.append(remove_piece(temp_dot_board, temp_color_board, origin_position))
+        keys = list(step_record.keys())
+        if step[0] != keys[len(keys)-1]:
+            origin_type = step[1].split(",")[1]
+            origin_position = [(step[0][0], step[0][1]), (step[0][2], step[0][3])]
+            if check_upper_piece(origin_type, origin_position):
+                temp_dot_board = copy.deepcopy(dot_board)
+                temp_color_board = copy.deepcopy(color_board)
+                boards.append(remove_piece(temp_dot_board, temp_color_board, origin_position))
     return boards
 
 
@@ -450,8 +454,10 @@ while not game_over:
             tree = compute_best_step(dot_board, color_board, ai_mode, False)
             dot_board = tree.root.next_move.dot_board
             color_board = tree.root.next_move.color_board
-            print_board(dot_board)
-            print_board(color_board)
+
+            #tree.root.next_move.step
+            step_record[to_string(tree.root.next_move.step)] = str(step_counter) + "," + str(tree.root.next_move.last_piece_type)
+
     else:
         if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
             string = input("Player 1 turn(recycle): ")
@@ -459,8 +465,9 @@ while not game_over:
             tree = compute_best_step(dot_board, color_board, ai_mode, True)
             dot_board = tree.root.next_move.dot_board
             color_board = tree.root.next_move.color_board
-            print_board(dot_board)
-            print_board(color_board)
+            step_record[to_string(tree.root.next_move.step)] = str(step_counter) + "," + str(tree.root.next_move.last_piece_type)
+
+            #origin_pos_str = to_string(origin_pos)
     if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
         if string != "":
             string = string.split(" ")
@@ -515,6 +522,7 @@ while not game_over:
     if step_counter >= 2:
         recycle = True
 
+    print(step_record)
     step_counter += 1
     turn += 1
     turn = turn % 2
