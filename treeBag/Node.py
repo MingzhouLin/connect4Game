@@ -17,5 +17,6 @@ class Node:
         #record the last piece dropped from last level.
 
         self.last_piece_type = last_piece_type
+        self.removed_piece = None
     def add_child(self, child):
         self.children.append(child)

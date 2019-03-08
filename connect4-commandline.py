@@ -21,6 +21,7 @@ root_grade = 0
 times_of_e = 0
 level_2_content = "\n"
 
+
 def resetTRACE_CONTENT():
     global root_grade
     global times_of_e
@@ -29,7 +30,6 @@ def resetTRACE_CONTENT():
     root_grade = 0
     times_of_e = 0
     level_2_content = "\n"
-
 
 
 def create_weight_board():
@@ -69,6 +69,7 @@ def remove_piece(dot_board, color_board, piece_pos):
     color_board[coordinate[0][0]][coordinate[0][1]] = 0
     color_board[coordinate[1][0]][coordinate[1][1]] = 0
     return dot_board, color_board
+
 
 def get_piece_position(pos, type):
     if int(type) % 2 == 1:
@@ -231,9 +232,7 @@ def is_game_over(dot_board, color_board, player1, player2):
         return True
 
 
-
 def compute_best_step(dot_board, color_board, mode, is_recycle):
-
     global root_grade
     global times_of_e
     global level_2_content
@@ -275,18 +274,17 @@ def build_tree(dot_board, color_board, is_recycle):
 
 
 def write_trace_file(times_of_e, root_grade, level_2_content):
-    content = str(times_of_e) + "\n" +str(root_grade)+"\n" +level_2_content
-    file = open('TraceOut.txt','w')
+    content = str(times_of_e) + "\n" + str(root_grade) + "\n" + level_2_content
+    file = open('TraceOut.txt', 'w')
     file.write(content)
     file.close()
 
 
 def minimax(tree):
-    #trace parameters
+    # trace parameters
     global root_grade
     global times_of_e
     global level_2_content
-
 
     tree_depth = len(tree.level)
 
@@ -317,18 +315,19 @@ def minimax(tree):
                         n.next_move = child
             n.grade = opt_value
             if n.level_type is MIN:
-                level_2_content = level_2_content+str(n.grade)+"\n"
+                level_2_content = level_2_content + str(n.grade) + "\n"
     root_grade = tree.root.grade
 
     return tree.root.next_move
 
-def alphabeta(node,alpha,beta,depth):
+
+def alphabeta(node, alpha, beta, depth):
     global root_grade
     global times_of_e
     global level_2_content
     if node.level == depth:
         node.grade = heuristic_matrix_estimation(node.dot_board, node.color_board)
-        times_of_e = times_of_e +1
+        times_of_e = times_of_e + 1
         return node.grade
     else:
         if node.level_type is MAX:
@@ -344,17 +343,15 @@ def alphabeta(node,alpha,beta,depth):
             for child in node.children:
                 beta = min(beta, alphabeta(child, alpha, beta, depth))
                 if beta <= alpha:
-                    node.grade= beta
-                    level_2_content = level_2_content + str(node.grade) +"\n"
+                    node.grade = beta
+                    level_2_content = level_2_content + str(node.grade) + "\n"
                     return beta
             node.grade = beta
             level_2_content = level_2_content + str(node.grade) + "\n"
             return beta
 
 
-
-def extend_tree(tree, level, role, node_id,is_recycle):
-
+def extend_tree(tree, level, role, node_id, is_recycle):
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
         for r in range(ROW_COUNT):
@@ -370,10 +367,8 @@ def extend_tree(tree, level, role, node_id,is_recycle):
                                 tmp_color_board = copy.deepcopy(parent_node.color_board)
                                 drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
 
-
                                 # tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
                                 # calculate the grad later in minimax or alpha-beta
-
 
                                 tmp_grade = 0
                                 node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, level + 1, role,
@@ -389,7 +384,10 @@ def extend_tree(tree, level, role, node_id,is_recycle):
                             for i in range(1, 9):
                                 type = str(i)
                                 next_step = get_piece_position(coordinate_translation((c, r)), type)
-                                if is_valid_location(board[0], next_step, type):
+                                next_step_str = next_step[0][0] + next_step[0][1] + next_step[1][0] + next_step[1][1]
+                                if is_valid_location(board[0], next_step, type) and (
+                                        (next_step_str not in step_record) or
+                                        step_record[next_step_str].split(",")[1] != type):
                                     tmp_dot_board = board[0]
                                     tmp_color_board = board[1]
                                     drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
@@ -411,7 +409,7 @@ def get_all_possible_remove_pieces(step_record):
     boards = list()
     for step in step_record.items():
         keys = list(step_record.keys())
-        if step[0] != keys[len(keys)-1]:
+        if step[0] != keys[len(keys) - 1]:
             origin_type = step[1].split(",")[1]
             origin_position = [(step[0][0], step[0][1]), (step[0][2], step[0][3])]
             if check_upper_piece(origin_type, origin_position):
@@ -419,6 +417,16 @@ def get_all_possible_remove_pieces(step_record):
                 temp_color_board = copy.deepcopy(color_board)
                 boards.append(remove_piece(temp_dot_board, temp_color_board, origin_position))
     return boards
+
+
+def update_record():
+    remove_record = ""
+    for step in step_record.keys():
+        if dot_board[int(step[1]) - 1][ord(step[0]) - ord('A')] == 0 or dot_board[int(step[3]) - 1][
+            ord(step[2]) - ord('A')] == 0:
+            remove_record = step
+    if remove_record != "":
+        step_record.pop(remove_record)
 
 
 dot_board = create_board()
@@ -455,9 +463,9 @@ while not game_over:
             dot_board = tree.root.next_move.dot_board
             color_board = tree.root.next_move.color_board
 
-            #tree.root.next_move.step
-            step_record[to_string(tree.root.next_move.step)] = str(step_counter) + "," + str(tree.root.next_move.last_piece_type)
-
+            # tree.root.next_move.step
+            step_record[to_string(tree.root.next_move.step)] = str(step_counter) + "," + str(
+                tree.root.next_move.last_piece_type)
     else:
         if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
             string = input("Player 1 turn(recycle): ")
@@ -465,9 +473,10 @@ while not game_over:
             tree = compute_best_step(dot_board, color_board, ai_mode, True)
             dot_board = tree.root.next_move.dot_board
             color_board = tree.root.next_move.color_board
-            step_record[to_string(tree.root.next_move.step)] = str(step_counter) + "," + str(tree.root.next_move.last_piece_type)
-
-            #origin_pos_str = to_string(origin_pos)
+            step_record[to_string(tree.root.next_move.step)] = str(step_counter) + "," + str(
+                tree.root.next_move.last_piece_type)
+            update_record()
+            # origin_pos_str = to_string(origin_pos)
     if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
         if string != "":
             string = string.split(" ")
