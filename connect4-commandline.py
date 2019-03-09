@@ -18,6 +18,7 @@ MIN = "min"
 MAX = "max"
 # bigger than this round will go to recycle
 RECYCLE_TIME = 24
+OVER_TIME = 60
 
 root_grade = 0
 times_of_e = 0
@@ -263,7 +264,10 @@ def compute_best_step(dot_board, color_board, mode, current_step):
         minimax(tree)
         grade_of_root = tree.root.grade
     else:
-        grade_of_root = alphabeta(tree.root, float('-inf'), float('+inf'), 3)
+        if current_step == OVER_TIME -1:
+            grade_of_root = alphabeta(tree.root, float('-inf'), float('+inf'), 2)
+        else:
+            grade_of_root = alphabeta(tree.root, float('-inf'), float('+inf'), 3)
         for child in tree.root.children:
             if child.grade is grade_of_root:
                 tree.root.next_move = child
@@ -288,8 +292,11 @@ def build_tree(dot_board, color_board, current_step):
     tree = Tree(root)
     tree.level[1] = [root]
     # could set a cut-off to set the leaf level
-    node_id, tree = extend_tree(tree, 1, MIN, node_id, current_step+1)
-    node_id, tree = extend_tree(tree, 2, MAX, node_id, current_step+2)
+    if current_step == OVER_TIME - 1:
+        node_id, tree = extend_tree(tree, 1, MIN, node_id, current_step + 1)
+    else:
+        node_id, tree = extend_tree(tree, 1, MIN, node_id, current_step+1)
+        node_id, tree = extend_tree(tree, 2, MAX, node_id, current_step+2)
     return tree
 
 
@@ -354,6 +361,10 @@ def alphabeta(node, alpha, beta, depth):
     if node.level == depth:
         node.grade = heuristic_matrix_estimation(node.dot_board, node.color_board)
         times_of_e = times_of_e + 1
+        # the last move without depth 3
+        if depth == 2:
+            level_2_content = level_2_content + str(node.grade) + "\n"
+
         return node.grade
     else:
         if node.level_type is MAX:
@@ -560,7 +571,7 @@ else:
     print("Player2 is on dot side")
 
 while not game_over:
-    if step_counter > 60:
+    if step_counter > OVER_TIME:
         print("No player has won, game ends.")
         break
     # Ask for Player 1 Input
@@ -579,7 +590,7 @@ while not game_over:
         if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
             string = input("Player 1 turn(recycle): ")
         else:
-            tree = compute_best_step(dot_board, color_board, ai_mode, step_counter)
+            tree = compute_best_step(dot_board, color_board, ai_mode, step_counter - 1)
             dot_board = tree.root.next_move.dot_board
             color_board = tree.root.next_move.color_board
             step_record[to_string(tree.root.next_move.step)] = str(step_counter) + "," + str(
