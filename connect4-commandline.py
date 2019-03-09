@@ -273,7 +273,8 @@ def compute_best_step(dot_board, color_board, mode, current_step):
                 tree.root.next_move = child
 
                 break
-    write_trace_file(times_of_e, grade_of_root, level_2_content)
+    if trace_on is "1":
+        write_trace_file(times_of_e, grade_of_root, level_2_content)
 
     return tree
 
@@ -389,8 +390,6 @@ def alphabeta(node, alpha, beta, depth):
 
 
 def extend_tree(tree, level, role, node_id, t_current_step):
-
-
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
         if t_current_step <= RECYCLE_TIME:
@@ -446,24 +445,17 @@ def extend_tree(tree, level, role, node_id, t_current_step):
                                     continue
 
                                 next_step_str = next_step[0][0] + next_step[0][1] + next_step[1][0] + next_step[1][1]
-                                if is_valid_location(r_dot_board, next_step, type) and (
-                                        (next_step_str not in r_step) or
-                                        r_step[next_step_str].split(",")[1] != type):
-
-
-
-                                    # tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
-                                    # calculate the grad later in minimax or alpha-beta
-
-                                    # if (tmp_dot_board == parent_node.dot_board).all is True and\
-                                    #     (tmp_color_board == parent_node.color_board).all is True:
-                                    #     continue
+                                # if is_valid_location(r_dot_board, next_step, type) and (
+                                #         (next_step_str not in r_step) or
+                                #         r_step[next_step_str].split(",")[1] != type):
+                                if is_valid_location(r_dot_board, next_step, type):
 
                                     if role is MIN:
                                         tmp_grade = float('inf')
                                     else:
                                         tmp_grade = float('-inf')
 
+                                    # create new board and add to node
                                     temp_step_record = copy.deepcopy(r_step)
 
                                     temp_dot_board = copy.deepcopy(r_dot_board)
@@ -551,7 +543,9 @@ def remove_a_record(node_step_record, node_dot_board):
 
 dot_board = create_board()
 color_board = create_board()
+print("Dot board    " + "0"+ " round.   dot->1:black,2:white")
 print(dot_board)
+print("Color board    " + "0"+ " round.   color->1:red, 2:white")
 print(color_board)
 game_over = False
 turn = 0
@@ -559,6 +553,7 @@ recycle = False
 step_counter = 1
 step_record = dict()
 clear_trace_file()
+trace_on = input("Please choose trace file on or off. 1. on  2. off")
 ai_mode = input("Please input AI mode. 1. minimax  2. alpha-beta")
 player1 = input("If AI plays as player1: 1.yes; 2.no")
 player1 = int(player1)

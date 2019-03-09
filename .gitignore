@@ -2,3 +2,4 @@
 .idea/
 treeBag/__pycache__/*
 TraceOut.txt
+*.pyc
