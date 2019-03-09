@@ -16,7 +16,7 @@ DOT = "dot"
 COLOR = "color"
 MIN = "min"
 MAX = "max"
-
+# bigger than this round will go to recycle
 RECYCLE_TIME = 4
 
 root_grade = 0
@@ -36,7 +36,7 @@ def resetTRACE_CONTENT():
 
 def create_weight_board():
     b = list()
-    for i in range(8):
+    for i in range(12):
         start_num = 10 * i + 1
         b.append(np.arange(start_num, start_num + 8))
     return b
@@ -64,13 +64,13 @@ def drop_piece(dot_board, color_board, piece_pos, type, step_record, step_number
         step_record[to_string(piece_pos)] = str(step_number) + "," + str(type)
 
 
-def remove_piece(dot_board, color_board, piece_pos):
-    coordinate = [coordinate_translation(piece_pos[0]), coordinate_translation(piece_pos[1])]
-    dot_board[coordinate[0][0]][coordinate[0][1]] = 0
-    dot_board[coordinate[1][0]][coordinate[1][1]] = 0
-    color_board[coordinate[0][0]][coordinate[0][1]] = 0
-    color_board[coordinate[1][0]][coordinate[1][1]] = 0
-    return dot_board, color_board
+def remove_piece(t_dot_board, t_color_board, p_pos):
+    coordinate = [coordinate_translation(p_pos[0]), coordinate_translation(p_pos[1])]
+    t_dot_board[coordinate[0][0]][coordinate[0][1]] = 0
+    t_dot_board[coordinate[1][0]][coordinate[1][1]] = 0
+    t_color_board[coordinate[0][0]][coordinate[0][1]] = 0
+    t_color_board[coordinate[1][0]][coordinate[1][1]] = 0
+    return t_dot_board, t_color_board
 
 
 def get_piece_position(pos, type):
@@ -90,7 +90,8 @@ def is_valid_location(board, pos, type):
             if int(tuple[1]) - 1 >= 1 and board[int(tuple[1]) - 2][ord(tuple[0]) - ord('A')] == 0:
                 return False
     elif int(type) % 2 == 0:
-        if pos[0][0] < 'A' or pos[0][0] > 'H' or pos[1][0] > 'H' or int(pos[0][1]) > 12 or int(pos[0][1]) < 1:
+        # 11 means cannot put over the top,  12,13 is not legal
+        if pos[0][0] < 'A' or pos[0][0] > 'H' or pos[1][0] > 'H' or int(pos[0][1]) > 11 or int(pos[0][1]) < 1:
             return False
         if board[int(pos[0][1]) - 1][ord(pos[0][0]) - ord('A')] != 0:
             return False
@@ -122,20 +123,35 @@ def is_recycle_legal(origin_pos, origin_pos_str, step_record, new_pos_str, new_t
         return False
     return True
 
-
+#check on real board.
 def check_upper_piece(origin_type, origin_pos):
     if int(origin_type) % 2 == 1:
         # 1,3,5,7
         coordinate = [get_upper_coordinate(origin_pos[0]), get_upper_coordinate(origin_pos[1])]
         if dot_board[coordinate[0][0]][coordinate[0][1]] != 0 or dot_board[coordinate[1][0]][coordinate[1][1]] != 0:
-            print("you cannot recycle a card that has something on top of it.")
             return False
 
     elif int(origin_type) % 2 == 0:
         # 2,4,6,8
         coordinate = [get_upper_coordinate(origin_pos[0]), get_upper_coordinate(origin_pos[1])]
         if dot_board[coordinate[1][0]][coordinate[1][1]] != 0:
-            print("you cannot recycle a card that has something on top of it.")
+            return False
+    return True
+
+# check on the board buit in the extend_Tree
+def check_upper_piece(origin_type, origin_pos, parent_dot_board):
+    if int(origin_type) % 2 == 1:
+        # 1,3,5,7
+        coordinate = [get_upper_coordinate(origin_pos[0]), get_upper_coordinate(origin_pos[1])]
+        if parent_dot_board[coordinate[0][0]][coordinate[0][1]] != 0 or parent_dot_board[coordinate[1][0]][coordinate[1][1]] != 0:
+
+            return False
+
+    elif int(origin_type) % 2 == 0:
+        # 2,4,6,8
+        coordinate = [get_upper_coordinate(origin_pos[0]), get_upper_coordinate(origin_pos[1])]
+        if parent_dot_board[coordinate[1][0]][coordinate[1][1]] != 0:
+
             return False
     return True
 
@@ -168,6 +184,7 @@ def heuristic_matrix_estimation(dot_board, color_board):
         for c in range(COLUMN_COUNT):
             if color_board[r][c] != 0:
                 key = str(color_board[r][c]) + str(dot_board[r][c])
+
                 clique[key] += WEIGHT_BOARD[r][c]
     grade = clique["22"] + 3 * clique["21"] - 2 * clique["11"] - 1.5 * clique["12"]
     return grade
@@ -243,15 +260,16 @@ def compute_best_step(dot_board, color_board, mode, current_step):
     tree = build_tree(dot_board, color_board, current_step)
 
     if mode is "1":
-        res_node = minimax(tree)
+        minimax(tree)
+        grade_of_root = tree.root.grade
     else:
         grade_of_root = alphabeta(tree.root, float('-inf'), float('+inf'), 3)
         for child in tree.root.children:
             if child.grade is grade_of_root:
                 tree.root.next_move = child
-                res_node = child
+
                 break
-    write_trace_file(times_of_e, root_grade, level_2_content)
+    write_trace_file(times_of_e, grade_of_root, level_2_content)
 
     return tree
 
@@ -264,21 +282,27 @@ def get_next_ai_move_string(ai_next_piece):
 
 def build_tree(dot_board, color_board, current_step):
     node_id = 0
-    root_grade = 0
-    root = Node(node_id, dot_board, color_board, None, 1, MAX, None, root_grade, None)
+
+    root = Node(node_id, dot_board, color_board, None, 1, MAX, None, float('-inf'), None, step_record)
     node_id += 1
     tree = Tree(root)
     tree.level[1] = [root]
     # could set a cut-off to set the leaf level
-    node_id, tree = extend_tree(tree, 1, MIN, node_id, current_step)
-    node_id, tree = extend_tree(tree, 2, MAX, node_id, current_step+1)
+    node_id, tree = extend_tree(tree, 1, MIN, node_id, current_step+1)
+    node_id, tree = extend_tree(tree, 2, MAX, node_id, current_step+2)
     return tree
 
 
 def write_trace_file(times_of_e, root_grade, level_2_content):
-    content = str(times_of_e) + "\n" + str(root_grade) + "\n" + level_2_content
+    content = str(times_of_e) + "\n" + str(root_grade) + "\n" + level_2_content +"\n"
     file = open('TraceOut.txt', 'a')
     file.write(content)
+    file.close()
+
+
+def clear_trace_file():
+    file = open('TraceOut.txt', 'w')
+    file.write("")
     file.close()
 
 
@@ -353,75 +377,146 @@ def alphabeta(node, alpha, beta, depth):
             return beta
 
 
-def extend_tree(tree, level, role, node_id, current_step):
+def extend_tree(tree, level, role, node_id, t_current_step):
+
+
     tree.level[level + 1] = []
     for parent_node in tree.level[level]:
-        for r in range(ROW_COUNT):
-            for c in range(COLUMN_COUNT):
-                if current_step < 24:
+        if t_current_step <= RECYCLE_TIME:
+            for r in range(ROW_COUNT):
+                for c in range(COLUMN_COUNT):
+
                     if (parent_node.dot_board[r][c] == 0 and r == 0) or (
                             parent_node.dot_board[r - 1][c] != 0 and parent_node.dot_board[r][c] == 0):
                         for i in range(1, 9):
                             type = str(i)
                             next_step = get_piece_position(coordinate_translation((c, r)), type)
-                            if is_valid_location(dot_board, next_step, type):
+                            if is_valid_location(parent_node.dot_board, next_step, type):
                                 tmp_dot_board = copy.deepcopy(parent_node.dot_board)
                                 tmp_color_board = copy.deepcopy(parent_node.color_board)
-                                drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
 
+                                temp_step_record = copy.deepcopy(parent_node.step_record)
+
+                                drop_piece(tmp_dot_board, tmp_color_board, next_step, type, temp_step_record, None)
+
+                                temp_step_record[to_string(next_step)] = str(t_current_step) + "," + str(type)
                                 # tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
                                 # calculate the grad later in minimax or alpha-beta
-
-                                tmp_grade = 0
+                                if role is MIN:
+                                    tmp_grade = float('inf')
+                                else:
+                                    tmp_grade = float('-inf')
                                 node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, level + 1, role,
                                             parent_node,
-                                            tmp_grade, type)
+                                            tmp_grade, type,temp_step_record)
                                 node_id += 1
                                 parent_node.add_child(node)
                                 tree.level[level + 1].append(node)
-                else:
-                    for board in get_all_possible_remove_pieces(step_record):
-                        if (board[0][r][c] == 0 and r == 0) or (
-                                board[0][r - 1][c] != 0 and board[0][r][c] == 0):
+        else:
+            #after remove the piece, the dot board, color board, step_record, removed_piece removed_type
+            r_dot_boards, r_color_boards, r_steps, r_pieces, r_pieces_type = get_all_possible_remove_pieces(parent_node.step_record, parent_node.dot_board, parent_node.color_board)
+            for i in range(len(r_steps)):
+
+                r_step = r_steps[i]
+                r_piece = r_pieces[i]
+                r_dot_board = r_dot_boards[i]
+                r_color_board = r_color_boards[i]
+                r_piece_type = r_pieces_type[i]
+
+                for r in range(ROW_COUNT):
+                    for c in range(COLUMN_COUNT):
+
+                        if (r_dot_board[r][c] == 0 and r == 0) or \
+                                (r_dot_board[r - 1][c] != 0 and r_dot_board[r][c] == 0):
                             for i in range(1, 9):
                                 type = str(i)
                                 next_step = get_piece_position(coordinate_translation((c, r)), type)
+                                if next_step == r_piece and r_piece_type ==type:
+                                    continue
+
                                 next_step_str = next_step[0][0] + next_step[0][1] + next_step[1][0] + next_step[1][1]
-                                if is_valid_location(board[0], next_step, type) and (
-                                        (next_step_str not in step_record) or
-                                        step_record[next_step_str].split(",")[1] != type):
-                                    tmp_dot_board = board[0]
-                                    tmp_color_board = board[1]
-                                    drop_piece(tmp_dot_board, tmp_color_board, next_step, type, step_record, None)
+                                if is_valid_location(r_dot_board, next_step, type) and (
+                                        (next_step_str not in r_step) or
+                                        r_step[next_step_str].split(",")[1] != type):
+
+
 
                                     # tmp_grade = heuristic_matrix_estimation(tmp_dot_board, tmp_color_board)
                                     # calculate the grad later in minimax or alpha-beta
 
-                                    tmp_grade = 0
-                                    node = Node(node_id, tmp_dot_board, tmp_color_board, next_step, level + 1, role,
+                                    # if (tmp_dot_board == parent_node.dot_board).all is True and\
+                                    #     (tmp_color_board == parent_node.color_board).all is True:
+                                    #     continue
+
+                                    if role is MIN:
+                                        tmp_grade = float('inf')
+                                    else:
+                                        tmp_grade = float('-inf')
+
+                                    temp_step_record = copy.deepcopy(r_step)
+
+                                    temp_dot_board = copy.deepcopy(r_dot_board)
+                                    temp_color_board = copy.deepcopy(r_color_board)
+
+                                    temp_step_record[to_string(next_step)] = str(t_current_step) + "," + str(
+                                        type)
+
+                                    drop_piece(temp_dot_board, temp_color_board, next_step, type, temp_step_record, None)
+
+                                    node = Node(node_id, temp_dot_board, temp_color_board, next_step, level + 1, role,
                                                 parent_node,
-                                                tmp_grade, type)
+                                                tmp_grade, type,temp_step_record)
                                     node_id += 1
                                     parent_node.add_child(node)
                                     tree.level[level + 1].append(node)
     return node_id, tree
 
 
-def get_all_possible_remove_pieces(step_record):
+# def get_all_possible_remove_pieces(step_record):
+#     boards = list()
+#     for step in step_record.items():
+#         keys = list(step_record.keys())
+#         if step[0] != keys[len(keys) - 1]:
+#             origin_type = step[1].split(",")[1]
+#             origin_position = [(step[0][0], step[0][1]), (step[0][2], step[0][3])]
+#             if check_upper_piece(origin_type, origin_position):
+#                 temp_dot_board = copy.deepcopy(dot_board)
+#                 temp_color_board = copy.deepcopy(color_board)
+#                 boards.append(remove_piece(temp_dot_board, temp_color_board, origin_position))
+#     return boards
+
+
+def get_all_possible_remove_pieces(parent_step_record, parent_dot_board, parent_color_board):
     boards = list()
-    for step in step_record.items():
-        keys = list(step_record.keys())
+    removed_record_step =list()
+    removed_piece_list = list()
+    removed_dot_boards = list()
+    removed_color_boards = list()
+    removed_piece_type_list = list()
+    for step in parent_step_record.items():
+        keys = list(parent_step_record.keys())
         if step[0] != keys[len(keys) - 1]:
             origin_type = step[1].split(",")[1]
             origin_position = [(step[0][0], step[0][1]), (step[0][2], step[0][3])]
-            if check_upper_piece(origin_type, origin_position):
-                temp_dot_board = copy.deepcopy(dot_board)
-                temp_color_board = copy.deepcopy(color_board)
-                boards.append(remove_piece(temp_dot_board, temp_color_board, origin_position))
-    return boards
+            if check_upper_piece(origin_type, origin_position, parent_dot_board):
+                temp_dot_board = copy.deepcopy(parent_dot_board)
+                temp_color_board = copy.deepcopy(parent_color_board)
+
+                t_dot_board, t_color_board = remove_piece(temp_dot_board, temp_color_board, origin_position)
+                temp_step_record = copy.deepcopy(parent_step_record)
+                t=dict()
+
+                t = remove_a_record(temp_step_record, temp_dot_board)
+                removed_dot_boards.append(t_dot_board)
+                removed_color_boards.append(t_color_board)
+                removed_piece_type_list.append(origin_type)
+                removed_record_step.append(t)
+                removed_piece_list.append(origin_position)
+    return removed_dot_boards, removed_color_boards, removed_record_step, removed_piece_list, removed_piece_type_list
 
 
 def update_record():
+    # global step_record
     remove_record = ""
     for step in step_record.keys():
         if dot_board[int(step[1]) - 1][ord(step[0]) - ord('A')] == 0 or dot_board[int(step[3]) - 1][
@@ -429,6 +524,18 @@ def update_record():
             remove_record = step
     if remove_record != "":
         step_record.pop(remove_record)
+
+
+def remove_a_record(node_step_record, node_dot_board):
+
+    remove_record = ""
+    for step in node_step_record.keys():
+        if node_dot_board[int(step[1]) - 1][ord(step[0]) - ord('A')] == 0 or node_dot_board[int(step[3]) - 1][
+            ord(step[2]) - ord('A')] == 0:
+            remove_record = step
+    if remove_record != "":
+        node_step_record.pop(remove_record)
+    return node_step_record
 
 
 dot_board = create_board()
@@ -440,7 +547,7 @@ turn = 0
 recycle = False
 step_counter = 1
 step_record = dict()
-
+clear_trace_file()
 ai_mode = input("Please input AI mode. 1. minimax  2. alpha-beta")
 player1 = input("If AI plays as player1: 1.yes; 2.no")
 player1 = int(player1)
@@ -461,7 +568,7 @@ while not game_over:
         if (turn == 0 and player1 == 2) or (turn == 1 and player1 == 1):
             string = input("Human turn: ")
         else:
-            tree = compute_best_step(dot_board, color_board, ai_mode, step_counter)
+            tree = compute_best_step(dot_board, color_board, ai_mode, step_counter -1)
             dot_board = tree.root.next_move.dot_board
             color_board = tree.root.next_move.color_board
 
@@ -530,10 +637,11 @@ while not game_over:
     print("Color board    " + str(step_counter) + " round.   color->1:red, 2:white")
     print_board(color_board)
 
-    if step_counter >= RECYCLE_TIME:
-        recycle = True
+
 
     print(step_record)
     step_counter += 1
     turn += 1
     turn = turn % 2
+    if step_counter > RECYCLE_TIME:
+        recycle = True

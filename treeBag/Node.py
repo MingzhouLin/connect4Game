@@ -1,5 +1,5 @@
 class Node:
-    def __init__(self, id, dot_board, color_board, step, level, level_type, parent, grade, last_piece_type):
+    def __init__(self, id, dot_board, color_board, step, level, level_type, parent, grade, last_piece_type,step_record):
         self.id = id
 
         self.dot_board = dot_board
@@ -14,6 +14,7 @@ class Node:
         self.grade = grade
         # next_move: record the optimal move for next level
         self.next_move = None
+        self.step_record = step_record
         #record the last piece dropped from last level.
 
         self.last_piece_type = last_piece_type
