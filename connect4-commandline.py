@@ -17,7 +17,7 @@ COLOR = "color"
 MIN = "min"
 MAX = "max"
 # bigger than this round will go to recycle
-RECYCLE_TIME = 4
+RECYCLE_TIME = 24
 
 root_grade = 0
 times_of_e = 0
@@ -139,7 +139,7 @@ def check_upper_piece(origin_type, origin_pos):
     return True
 
 # check on the board buit in the extend_Tree
-def check_upper_piece(origin_type, origin_pos, parent_dot_board):
+def check_upper_piece_ai(origin_type, origin_pos, parent_dot_board):
     if int(origin_type) % 2 == 1:
         # 1,3,5,7
         coordinate = [get_upper_coordinate(origin_pos[0]), get_upper_coordinate(origin_pos[1])]
@@ -498,7 +498,7 @@ def get_all_possible_remove_pieces(parent_step_record, parent_dot_board, parent_
         if step[0] != keys[len(keys) - 1]:
             origin_type = step[1].split(",")[1]
             origin_position = [(step[0][0], step[0][1]), (step[0][2], step[0][3])]
-            if check_upper_piece(origin_type, origin_position, parent_dot_board):
+            if check_upper_piece_ai(origin_type, origin_position, parent_dot_board):
                 temp_dot_board = copy.deepcopy(parent_dot_board)
                 temp_color_board = copy.deepcopy(parent_color_board)
 
