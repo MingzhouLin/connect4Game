@@ -16,9 +16,10 @@ DOT = "dot"
 COLOR = "color"
 MIN = "min"
 MAX = "max"
+GRADE_LEVEL = [10, 100, 1000, 10000,  -10, -100, -1000, -10000]
 # bigger than this round will go to recycle
-RECYCLE_TIME = 24
-OVER_TIME = 60
+RECYCLE_TIME = 4
+OVER_TIME = 40
 
 root_grade = 0
 times_of_e = 0
@@ -179,7 +180,97 @@ def get_upper_coordinate(coordinate):
     return (int(coordinate[1]), ord(coordinate[0]) - ord('A'))
 
 
-def heuristic_matrix_estimation(dot_board, color_board):
+def vertical(board, r, c, total_grade, connected_step, type):
+    if board[r][c] != 0:
+        connected_step += 1
+        if (r + 1 < ROW_COUNT and board[r + 1][c] != board[r][c]) or r == ROW_COUNT - 1:
+            total_grade = update_grade(connected_step, total_grade, type)
+            connected_step = 0
+    return connected_step, total_grade
+
+
+def horizantal(board, r, c, total_grade, connected_step, type):
+    if board[r][c] != 0:
+        connected_step += 1
+        if (c + 1 < COLUMN_COUNT and board[r][c + 1] != board[r][c]) or c == COLUMN_COUNT - 1:
+            total_grade = update_grade(connected_step, total_grade, type)
+            connected_step = 0
+    return connected_step, total_grade
+
+
+def heuristic_matrix_estimation(d_board, c_board):
+    # Check vertical
+    total_grade = 0
+    for c in range(COLUMN_COUNT):
+        dot_connected_step = 0
+        color_connected_step = 0
+        for r in range(ROW_COUNT):
+            dot_connected_step, total_grade = vertical(d_board, r, c, total_grade, dot_connected_step, 1)
+            color_connected_step, total_grade = vertical(c_board, r, c, total_grade, color_connected_step, 0)
+    # Check horizantal
+    for r in range(ROW_COUNT):
+        dot_connected_step = 0
+        color_connected_step = 0
+        for c in range(COLUMN_COUNT):
+            dot_connected_step, total_grade = horizantal(d_board, r, c, total_grade, dot_connected_step, 1)
+            color_connected_step, total_grade = horizantal(c_board, r, c, total_grade, color_connected_step, 0)
+
+    # Check positively sloped diaganols
+    for r in range(ROW_COUNT):
+        total_grade = positively_sloped_diaganols(d_board, r, 0, total_grade, 1)
+        total_grade = positively_sloped_diaganols(c_board, r, 0, total_grade, 0)
+    for c in range(COLUMN_COUNT):
+        total_grade = positively_sloped_diaganols(d_board, ROW_COUNT - 1, c, total_grade, 1)
+        total_grade = positively_sloped_diaganols(c_board, ROW_COUNT - 1, c, total_grade, 0)
+
+    # Check negatively sloped diaganols
+    for c in range(COLUMN_COUNT):
+        total_grade = negatively_sloped_diaganols(d_board, ROW_COUNT - 1, c, total_grade, 1)
+        total_grade = negatively_sloped_diaganols(c_board, ROW_COUNT - 1, c, total_grade, 0)
+    for r in range(ROW_COUNT):
+        total_grade = negatively_sloped_diaganols(d_board, r, COLUMN_COUNT - 1, total_grade, 1)
+        total_grade = negatively_sloped_diaganols(c_board, r, COLUMN_COUNT - 1, total_grade, 0)
+    return total_grade
+
+
+def positively_sloped_diaganols(board, r, c, total_grade, type):
+    connected_step = 0
+    while r >= 0 and c < COLUMN_COUNT:
+        if board[r][c] != 0:
+            connected_step += 1
+            if (r - 1 >= 0 and c + 1 < COLUMN_COUNT and board[r - 1][c + 1] != board[r][
+                c]) or c == COLUMN_COUNT - 1 or r == 0:
+                total_grade = update_grade(connected_step, total_grade, type)
+                connected_step = 0
+        r -= 1
+        c += 1
+    return total_grade
+
+
+def negatively_sloped_diaganols(board, r, c, total_grade, type):
+    connected_step = 0
+    while r >= 0 and c >= 0:
+        if board[r][c] != 0:
+            connected_step += 1
+            if (r - 1 >= 0 and c - 1 >= 0 and board[r - 1][c - 1] != board[r][
+                c]) or c == 0 or r == 0:
+                total_grade = update_grade(connected_step, total_grade, type)
+                connected_step = 0
+        r -= 1
+        c -= 1
+    return total_grade
+
+
+# type=1->dot, type=0->color
+def update_grade(connected_step, total_grade, type):
+    if type == 1:
+        total_grade += GRADE_LEVEL[connected_step - 1]
+    else:
+        total_grade += GRADE_LEVEL[connected_step + 3]
+    return total_grade
+
+
+def heuristic_matrix_estimatio1(dot_board, color_board):
     clique = {"11": 0, "12": 0, "21": 0, "22": 0}
     for r in range(ROW_COUNT):
         for c in range(COLUMN_COUNT):
