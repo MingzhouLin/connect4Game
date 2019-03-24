@@ -18,12 +18,17 @@ MIN = "min"
 MAX = "max"
 GRADE_LEVEL = [10, 100, 1000, 10000,  -10, -100, -1000, -10000]
 # bigger than this round will go to recycle
-RECYCLE_TIME = 4
+RECYCLE_TIME = 24
 OVER_TIME = 40
+
+HEURISTIC_GRADE = dict()
 
 root_grade = 0
 times_of_e = 0
 level_2_content = "\n"
+
+
+
 
 
 def resetTRACE_CONTENT():
@@ -50,6 +55,54 @@ WEIGHT_BOARD = create_weight_board()
 def create_board():
     board = np.zeros((ROW_COUNT, COLUMN_COUNT), dtype=np.int)
     return board
+
+
+def init_heuristic_map(piece):
+    piece = str(piece)
+    global HEURISTIC_GRADE
+    #4
+    sample1 = piece+piece+piece+piece
+    HEURISTIC_GRADE[sample1] = 50000
+
+    #5
+    #possible to win with 2 directions
+    sample2 = "0"+piece+piece+piece+"0"
+    HEURISTIC_GRADE[sample2] = 5000
+
+
+    # 1step to win
+    sample6 = "0"+piece+piece+piece
+    HEURISTIC_GRADE[sample6] = 500
+    sample7 = piece+piece+piece+"0"
+    HEURISTIC_GRADE[sample7] = 500
+    sample8 = piece+"0"+piece+piece
+    HEURISTIC_GRADE[sample8] = 500
+    sample9 = piece+piece+"0"+piece
+    HEURISTIC_GRADE[sample9] = 500
+
+
+
+    # 2 steps to win with 2 directions
+    sample3 = "0"+"0"+piece+piece+"0"
+    HEURISTIC_GRADE[sample3] = 500
+    sample4 = "0"+piece+piece+"0"+"0"
+    HEURISTIC_GRADE[sample4] = 500
+    sample5 ="0"+piece+"0"+piece+"0"
+    HEURISTIC_GRADE[sample5] = 500
+
+    # normal step
+    sample10 = "0"+piece+"0"+"0"+"0"
+    HEURISTIC_GRADE[sample10] = 100
+    sample11 = "0"+"0"+piece+"0"+"0"
+    HEURISTIC_GRADE[sample11] = 100
+    sample12 = "0"+"0"+"0"+piece+"0"
+    HEURISTIC_GRADE[sample12] = 100
+
+
+
+
+
+
 
 
 def to_string(piece_pos):
@@ -198,7 +251,7 @@ def horizantal(board, r, c, total_grade, connected_step, type):
     return connected_step, total_grade
 
 
-def heuristic_matrix_estimation(d_board, c_board):
+def heuristic_matrix_estimation_1(d_board, c_board):
     # Check vertical
     total_grade = 0
     for c in range(COLUMN_COUNT):
@@ -231,6 +284,160 @@ def heuristic_matrix_estimation(d_board, c_board):
         total_grade = negatively_sloped_diaganols(d_board, r, COLUMN_COUNT - 1, total_grade, 1)
         total_grade = negatively_sloped_diaganols(c_board, r, COLUMN_COUNT - 1, total_grade, 0)
     return total_grade
+
+
+def heuristic_matrix_estimation(d_board, c_board, ai_play_dot):
+    # ----- d_board is + positve,   c_board = - negative : ai_play_dot
+    # Check vertical
+    total_grade = 0
+    # detect by every 4 cells    each row
+    for r in range(ROW_COUNT):
+        for c in range(COLUMN_COUNT -4):
+            # by 4
+            dot_cell = str(d_board[r][c]) + str(d_board[r][c+1])+str(d_board[r][c+2])+str(d_board[r][c+3])
+            color_cell = str(c_board[r][c]) + str(c_board[r][c+1])+str(c_board[r][c+2])+str(c_board[r][c+3])
+            if ai_play_dot is True:
+                total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell,0)
+                total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+            else:
+                total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+            # by 5
+            dot_cell = str(d_board[r][c]) + str(d_board[r][c + 1]) + str(d_board[r][c + 2]) + str(d_board[r][c + 3]) + str(d_board[r][c + 4])
+            color_cell = str(c_board[r][c]) + str(c_board[r][c + 1]) + str(c_board[r][c + 2]) + str(c_board[r][c + 3]) +str(d_board[r][c + 4])
+            if ai_play_dot is True:
+                total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell,0)
+                total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+            else:
+                total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+
+            if c == COLUMN_COUNT -3:
+                dot_cell = str(d_board[r][c+1]) + str(d_board[r][c + 2]) + str(d_board[r][c + 3]) + str(d_board[r][c + 4])
+                color_cell = str(c_board[r][c+1]) + str(c_board[r][c + 2]) + str(c_board[r][c + 3]) + str(
+                    c_board[r][c + 4])
+                if ai_play_dot is True:
+                    total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell, 0)
+                    total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+                else:
+                    total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                    total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+
+
+
+    # detect by every 4 cells    each coloum
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT -4):
+            #by 4
+            dot_cell = str(d_board[r][c]) + str(d_board[r+1][c])+str(d_board[r+2][c])+str(d_board[r+3][c])
+            color_cell = str(c_board[r][c]) + str(c_board[r+1][c])+str(c_board[r+2][c])+str(c_board[r+3][c])
+            if ai_play_dot is True:
+                total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell,0)
+                total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+            else:
+                total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+            #by 5
+            dot_cell = str(d_board[r][c]) + str(d_board[r+1][c]) + str(d_board[r+2][c]) + str(d_board[r+3][c]) + str(d_board[r+4][c])
+            color_cell = str(c_board[r][c]) + str(c_board[r+1][c]) + str(c_board[r+2][c]) + str(c_board[r+3][c]) +str(d_board[r+4][c])
+            if ai_play_dot is True:
+                total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell,0)
+                total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+            else:
+                total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+            if r == ROW_COUNT -3:
+                dot_cell = str(d_board[r+1][c]) + str(d_board[r+2][c]) + str(d_board[r+3][c]) + str(d_board[r+4][c])
+                color_cell = str(c_board[r+1][c]) + str(c_board[r+2][c]) + str(c_board[r+3][c]) + str(
+                    c_board[r+4][c])
+                if ai_play_dot is True:
+                    total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell, 0)
+                    total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+                else:
+                    total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                    total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+
+    # Check positively sloped diaganols
+    for c in range(COLUMN_COUNT -4):
+        for r in range(ROW_COUNT-4):
+            #by 4
+            dot_cell = str(d_board[r][c]) + str(d_board[r+1][c+1])+str(d_board[r+2][c+2])+str(d_board[r+3][c+3])
+            color_cell = str(c_board[r][c]) + str(c_board[r+1][c+1])+str(c_board[r+2][c+2])+str(c_board[r+3][c+3])
+            if ai_play_dot is True:
+                total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell,0)
+                total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+            else:
+                total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+            #by 5
+            dot_cell = str(d_board[r][c]) + str(d_board[r+1][c+1]) + str(d_board[r+2][c+2]) + str(d_board[r+3][c+3]) + str(d_board[r+4][c+4])
+            color_cell = str(c_board[r][c]) + str(c_board[r+1][c+1]) + str(c_board[r+2][c+2]) + str(c_board[r+3][c+3]) +str(d_board[r+4][c+4])
+            if ai_play_dot is True:
+                total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell,0)
+                total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+            else:
+                total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+            if r == ROW_COUNT -3:
+                dot_cell = str(d_board[r+1][c]) + str(d_board[r+2][c+1]) + str(d_board[r+3][c+2]) + str(d_board[r+4][c+3])
+                color_cell = str(c_board[r+1][c]) + str(c_board[r+2][c+1]) + str(c_board[r+3][c+2]) + str(
+                    c_board[r+4][c+3])
+                if ai_play_dot is True:
+                    total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell, 0)
+                    total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+                else:
+                    total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                    total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+            if c == COLUMN_COUNT -3:
+                dot_cell = str(d_board[r][c+1]) + str(d_board[r + 1][c + 2]) + str(d_board[r + 2][c + 3]) + str(
+                    d_board[r + 3][c + 4])
+                color_cell = str(c_board[r][c+1]) + str(c_board[r + 1][c + 2]) + str(c_board[r + 2][c + 3]) + str(
+                    c_board[r + 3][c + 4])
+                if ai_play_dot is True:
+                    total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell, 0)
+                    total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+                else:
+                    total_grade = total_grade - HEURISTIC_GRADE.get(dot_cell, 0)
+                    total_grade = total_grade + HEURISTIC_GRADE.get(color_cell, 0)
+
+
+    # Check negatively sloped diaganols
+    for c in range(COLUMN_COUNT -4):
+        for r in range(4, ROW_COUNT):
+            #by 4
+            dot_cell = str(d_board[r][c]) + str(d_board[r-1][c+1])+str(d_board[r-2][c+2])+str(d_board[r-3][c+3])
+            color_cell = str(c_board[r][c]) + str(c_board[r-1][c+1])+str(c_board[r-2][c+2])+str(c_board[r-3][c+3])
+            total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell,0)
+            total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+
+            #by 5
+            dot_cell = str(d_board[r][c]) + str(d_board[r - 1][c + 1]) + str(d_board[r - 2][c + 2]) + str(
+                d_board[r - 3][c + 3]) + str(d_board[r - 4][c + 4])
+            color_cell = str(c_board[r][c]) + str(c_board[r - 1][c + 1]) + str(c_board[r - 2][c + 2]) + str(
+                c_board[r - 3][c + 3])+ str(c_board[r - 4][c + 4])
+            total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell, 0)
+            total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+
+            if r == 4:
+                dot_cell = str(d_board[r-1][c]) + str(d_board[r-2][c+1]) + str(d_board[r-3][c+2]) + str(d_board[r-4][c+3])
+                color_cell = str(c_board[r-1][c]) + str(c_board[r-2][c+1]) + str(c_board[r-3][c+2]) + str(
+                    c_board[r-4][c+3])
+                total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell, 0)
+                total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+            if c == COLUMN_COUNT -3:
+                # by 4
+                dot_cell = str(d_board[r][c+1]) + str(d_board[r - 1][c + 2]) + str(d_board[r - 2][c + 3]) + str(
+                    d_board[r - 3][c + 4])
+                color_cell = str(c_board[r][c+1]) + str(c_board[r - 1][c + 2]) + str(c_board[r - 2][c + 3]) + str(
+                    c_board[r - 3][c + 4])
+                total_grade = total_grade + HEURISTIC_GRADE.get(dot_cell, 0)
+                total_grade = total_grade - HEURISTIC_GRADE.get(color_cell, 0)
+
+
+
+
+    return total_grade
+
 
 
 def positively_sloped_diaganols(board, r, c, total_grade, type):
@@ -270,7 +477,7 @@ def update_grade(connected_step, total_grade, type):
     return total_grade
 
 
-def heuristic_matrix_estimatio1(dot_board, color_board):
+def heuristic_matrix_estimation_naive(dot_board, color_board):
     clique = {"11": 0, "12": 0, "21": 0, "22": 0}
     for r in range(ROW_COUNT):
         for c in range(COLUMN_COUNT):
@@ -451,7 +658,7 @@ def alphabeta(node, alpha, beta, depth):
     global times_of_e
     global level_2_content
     if node.level == depth:
-        node.grade = heuristic_matrix_estimation(node.dot_board, node.color_board)
+        node.grade = heuristic_matrix_estimation(node.dot_board, node.color_board, ai_play_dot)
         times_of_e = times_of_e + 1
         # the last move without depth 3
         if depth == 2:
@@ -649,12 +856,23 @@ ai_mode = input("Please input AI mode. 1. minimax  2. alpha-beta")
 player1 = input("If AI plays as player1: 1.yes; 2.no")
 player1 = int(player1)
 side1 = input("Player 1 choose side: 1.dot; 2.color")
+
+ai_play_dot = True
+
+if player1 == 1 and side1 == '2':
+    ai_play_dot = False
+elif player1 == 2 and side1 == '1':
+    ai_play_dot = False
+
 if side1 == 1:
     side2 = 2
     print("Player2 is on color side")
 else:
     side2 = 1
     print("Player2 is on dot side")
+
+init_heuristic_map(1)
+init_heuristic_map(2)
 
 while not game_over:
     if step_counter > OVER_TIME:
