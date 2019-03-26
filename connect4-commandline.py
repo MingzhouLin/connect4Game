@@ -18,7 +18,7 @@ MIN = "min"
 MAX = "max"
 GRADE_LEVEL = [10, 100, 1000, 10000,  -10, -100, -1000, -10000]
 # bigger than this round will go to recycle
-RECYCLE_TIME = 4
+RECYCLE_TIME = 24
 OVER_TIME = 40
 
 root_grade = 0
@@ -200,36 +200,41 @@ def horizantal(board, r, c, total_grade, connected_step, type):
 
 def heuristic_matrix_estimation(d_board, c_board):
     # Check vertical
-    total_grade = 0
-    for c in range(COLUMN_COUNT):
-        dot_connected_step = 0
-        color_connected_step = 0
-        for r in range(ROW_COUNT):
-            dot_connected_step, total_grade = vertical(d_board, r, c, total_grade, dot_connected_step, 1)
-            color_connected_step, total_grade = vertical(c_board, r, c, total_grade, color_connected_step, 0)
-    # Check horizantal
-    for r in range(ROW_COUNT):
-        dot_connected_step = 0
-        color_connected_step = 0
+    try:
+
+        total_grade = 0
         for c in range(COLUMN_COUNT):
-            dot_connected_step, total_grade = horizantal(d_board, r, c, total_grade, dot_connected_step, 1)
-            color_connected_step, total_grade = horizantal(c_board, r, c, total_grade, color_connected_step, 0)
+            dot_connected_step = 0
+            color_connected_step = 0
+            for r in range(ROW_COUNT):
+                dot_connected_step, total_grade = vertical(d_board, r, c, total_grade, dot_connected_step, 1)
+                color_connected_step, total_grade = vertical(c_board, r, c, total_grade, color_connected_step, 0)
+        # Check horizantal
+        for r in range(ROW_COUNT):
+            dot_connected_step = 0
+            color_connected_step = 0
+            for c in range(COLUMN_COUNT):
+                dot_connected_step, total_grade = horizantal(d_board, r, c, total_grade, dot_connected_step, 1)
+                color_connected_step, total_grade = horizantal(c_board, r, c, total_grade, color_connected_step, 0)
 
-    # Check positively sloped diaganols
-    for r in range(ROW_COUNT):
-        total_grade = positively_sloped_diaganols(d_board, r, 0, total_grade, 1)
-        total_grade = positively_sloped_diaganols(c_board, r, 0, total_grade, 0)
-    for c in range(COLUMN_COUNT):
-        total_grade = positively_sloped_diaganols(d_board, ROW_COUNT - 1, c, total_grade, 1)
-        total_grade = positively_sloped_diaganols(c_board, ROW_COUNT - 1, c, total_grade, 0)
+        # Check positively sloped diaganols
+        for r in range(ROW_COUNT):
+            total_grade = positively_sloped_diaganols(d_board, r, 0, total_grade, 1)
+            total_grade = positively_sloped_diaganols(c_board, r, 0, total_grade, 0)
+        for c in range(COLUMN_COUNT):
+            total_grade = positively_sloped_diaganols(d_board, ROW_COUNT - 1, c, total_grade, 1)
+            total_grade = positively_sloped_diaganols(c_board, ROW_COUNT - 1, c, total_grade, 0)
 
-    # Check negatively sloped diaganols
-    for c in range(COLUMN_COUNT):
-        total_grade = negatively_sloped_diaganols(d_board, ROW_COUNT - 1, c, total_grade, 1)
-        total_grade = negatively_sloped_diaganols(c_board, ROW_COUNT - 1, c, total_grade, 0)
-    for r in range(ROW_COUNT):
-        total_grade = negatively_sloped_diaganols(d_board, r, COLUMN_COUNT - 1, total_grade, 1)
-        total_grade = negatively_sloped_diaganols(c_board, r, COLUMN_COUNT - 1, total_grade, 0)
+        # Check negatively sloped diaganols
+        for c in range(COLUMN_COUNT):
+            total_grade = negatively_sloped_diaganols(d_board, ROW_COUNT - 1, c, total_grade, 1)
+            total_grade = negatively_sloped_diaganols(c_board, ROW_COUNT - 1, c, total_grade, 0)
+        for r in range(ROW_COUNT):
+            total_grade = negatively_sloped_diaganols(d_board, r, COLUMN_COUNT - 1, total_grade, 1)
+            total_grade = negatively_sloped_diaganols(c_board, r, COLUMN_COUNT - 1, total_grade, 0)
+
+    except:
+        total_grade = 0
     return total_grade
 
 
