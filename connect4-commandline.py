@@ -624,7 +624,7 @@ def minimax(tree):
         for n in tree.level[i]:
 
             if len(n.children) is 0:
-                n.grade = heuristic_matrix_estimation(n.dot_board, n.color_board)
+                n.grade = heuristic_matrix_estimation(n.dot_board, n.color_board, ai_play_dot)
                 times_of_e = times_of_e + 1
                 continue
 
@@ -838,13 +838,28 @@ def remove_a_record(node_step_record, node_dot_board):
         node_step_record.pop(remove_record)
     return node_step_record
 
+def test_piece(string):
+    pos = (string[2], string[3])
+    module = string[1]
+
+    piece_pos = get_piece_position(pos, module)
+
+    drop_piece(dot_board, color_board, piece_pos, module, None, None)
+
+
 
 dot_board = create_board()
 color_board = create_board()
+# sss  = '0 2 B 1'
+# test_piece(sss.split(" "))
+# sss = "0 2 C 1"
+# test_piece(sss.split(" "))
+
+
 print("Dot board    " + "0"+ " round.   dot->1:black,2:white")
-print(dot_board)
+print_board(dot_board)
 print("Color board    " + "0"+ " round.   color->1:red, 2:white")
-print(color_board)
+print_board(color_board)
 game_over = False
 turn = 0
 recycle = False
